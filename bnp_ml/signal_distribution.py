@@ -1,5 +1,7 @@
 import numpy as np
 from numpy.random import default_rng
+import dataclasses
+
 
 class RangeDomain:
     def __init__(self, window_size, max_fragment_length):
@@ -9,7 +11,24 @@ class RangeDomain:
 
     def __contains__(self, elem):
         return elem in self._domain
+
+
+@dataclasses.dataclass
+class SignalModel:
+    binding_affinity: np.ndarray
+    fragment_length_distribution: np.ndarray
+    signal_probability: float
     
+
+class SignalProb:
+    def __init__(self, params: SignalModel):
+        self._params = params
+
+
+class SignalSimulator:
+    def __init__(self, params: SignalModel, rng: np.random.Generator):
+        self._params = params
+        self._rng = rng
 
 
 class SignalModel:
@@ -21,33 +40,35 @@ class SignalModel:
         self._padded_affinity = np.pad(self._binding_affinity, (self._max_fragment_length-1, ))
         self._domain = RangeDomain(self._binding_affinity.size, self._max_fragment_length)
 
+    def probability(self, position: int, strand: str):
+        assert (position, strand) in self._domain, (position, strand)
+        print(self._background_prob, self._foreground_prob(position, strand))
+        return self._background_prob+self._foreground_prob(position, strand)
+
+    def simulate(self, rng: np.random.Generator):
+        is_signal = rng.choice([False, True], p=[self._signal_probability, 1-self._signal_probability])
+        if not is_signal:
+            res = self._simulate_background(rng)
+        else:
+            res = self._simulate_foreground(rng)
+        assert res in self._domain, (res, is_signal)
+        return res
+
     @property
-    def cumulative_fragment_length_distribution(self):
+    def _cumulative_fragment_length_distribution(self):
         return np.cumsum(self._fragment_length_distribution)
 
     @property
-    def area_size(self):
+    def _area_size(self):
         return self._max_fragment_length+self._binding_affinity.size-1
 
     @property
-    def background_prob(self):
-        return (1-self._signal_probability)*(1/(self.area_size*2))
-    
-    def foreground_prob(self, position: int, strand: str):
-        if strand == '+':
-            index = slice(position, position+self._max_fragment_length)
-        else:
-            index = slice(position, position-self._max_fragment_length if position-self._max_fragment_length>=0 else None, -1)
-        p = self._signal_probability*np.sum(self._fragment_length_distribution[1:] * 0.5*self._padded_affinity[index])
-        return p
+    def _background_prob(self):
+        return (1-self._signal_probability)*(1/(self._area_size*2))
 
-    def probability(self, position, strand):
-        assert (position, strand) in self._domain, (position, strand)
-        return self.background_prob+self.foreground_prob(position, strand)
-
-    def simulate_background(self, rng):
+    def _simulate_background(self, rng):
         reverse = rng.choice([True, False])
-        pos = rng.integers(self.area_size)
+        pos = rng.integers(self._area_size)
         if reverse:
             res = (pos+self._max_fragment_length-1, '-')
         else:
@@ -55,7 +76,7 @@ class SignalModel:
         assert res in self._domain, (res, reverse, pos)
         return res
 
-    def simulate_foreground(self, rng):
+    def _simulate_foreground(self, rng):
         pos = rng.choice(np.arange(self._binding_affinity.size), p=self._binding_affinity)
         fragment_length = rng.choice(np.arange(self._max_fragment_length+1), p=self._fragment_length_distribution)
         reverse = rng.choice([True, False])
@@ -64,11 +85,3 @@ class SignalModel:
         if reverse:
             return pos+self._max_fragment_length-1 + fragment_length-1, '-'
 
-    def simulate(self, rng: default_rng):
-        is_signal = rng.choice([False, True], p=[self._signal_probability, 1-self._signal_probability])
-        if not is_signal:
-            res = self.simulate_background(rng)
-        else:
-            res = self.simulate_foreground(rng)
-        assert res in self._domain, (res, is_signal)
-        return res
