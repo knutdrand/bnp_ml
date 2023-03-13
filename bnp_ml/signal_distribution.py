@@ -40,6 +40,9 @@ class SignalModel:
         self._padded_affinity = np.pad(self._binding_affinity, (self._max_fragment_length-1, ))
         self._domain = RangeDomain(self._binding_affinity.size, self._max_fragment_length)
 
+    def logpmf(self, position: int, strand: str):
+        return np.logaddexp(self._log_background_prob, self._log_foreground_prob(position, strand))
+
     def probability(self, position: int, strand: str):
         assert (position, strand) in self._domain, (position, strand)
         print(self._background_prob, self._foreground_prob(position, strand))
@@ -65,6 +68,15 @@ class SignalModel:
     @property
     def _background_prob(self):
         return (1-self._signal_probability)*(1/(self._area_size*2))
+
+    def _foreground_prob(self, position: int, strand: str):
+        if strand == '+':
+            index = slice(position, position+self._max_fragment_length)
+        else:
+            index = slice(position, position-self._max_fragment_length if position-self._max_fragment_length>=0 else None, -1)
+
+        p = self._signal_probability*np.sum(self._fragment_length_distribution[1:] * 0.5*self._padded_affinity[index])
+        return p
 
     def _simulate_background(self, rng):
         reverse = rng.choice([True, False])
