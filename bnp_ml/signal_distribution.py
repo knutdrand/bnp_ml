@@ -1,6 +1,8 @@
 import numpy as np
 from numpy.random import default_rng
+from logarray.logarray import log_array
 import dataclasses
+from typing import Tuple
 
 
 class RangeDomain:
@@ -33,23 +35,45 @@ class SignalSimulator:
 
 class SignalModel:
     def __init__(self, binding_affinity, fragment_length_distribution, signal_probability):
-        self._binding_affinity = binding_affinity
-        self._fragment_length_distribution = fragment_length_distribution
-        self._signal_probability = signal_probability
-        self._max_fragment_length = self._fragment_length_distribution.size-1
+        # self._w = np.log(binding_affinity)
+        # self._f = np.log(fragment_length_distribution)
+        # self._s = np.log(signal_probability)
+        self.B = binding_affinity
+        self.F = fragment_length_distribution
+        self.S = signal_probability
+        print(binding_affinity, fragment_length_distribution, signal_probability)
+        self._binding_affinity = log_array(binding_affinity)
+        self._fragment_length_distribution = log_array(fragment_length_distribution)
+        self._signal_probability = log_array(signal_probability)
+        self._max_fragment_length = len(self._fragment_length_distribution)-1
         self._padded_affinity = np.pad(self._binding_affinity, (self._max_fragment_length-1, ))
-        self._domain = RangeDomain(self._binding_affinity.size, self._max_fragment_length)
+        self._domain = RangeDomain(len(self._binding_affinity), self._max_fragment_length)
 
-    def logpmf(self, position: int, strand: str):
-        return np.logaddexp(self._log_background_prob, self._log_foreground_prob(position, strand))
+        # self._param_names = ['_binding_affinity',
+        #                      '_fragment_length_distribution',
+        #                      '_signal_probability']
+        self._param_names = ['B',
+                             'F',
+                             'S']
+
+        self.arg_constraints = {name: None for name in self._param_names}
+
+        self.event_shape = tuple()
+
+    def log_prob(self, data: Tuple[int, str]):
+        return [np.log(self.probability(p, s))
+                for p, s in data]
 
     def probability(self, position: int, strand: str):
         assert (position, strand) in self._domain, (position, strand)
-        print(self._background_prob, self._foreground_prob(position, strand))
         return self._background_prob+self._foreground_prob(position, strand)
 
+    def sample(self, n=(1,)):
+        assert len(n) == 1
+        return [self.simulate(np.random.default_rng()) for _ in range(n[0])]
+
     def simulate(self, rng: np.random.Generator):
-        is_signal = rng.choice([False, True], p=[self._signal_probability, 1-self._signal_probability])
+        is_signal = rng.choice([False, True], p=[self._signal_probability.to_array(), 1-self._signal_probability.to_array()])
         if not is_signal:
             res = self._simulate_background(rng)
         else:
@@ -63,7 +87,7 @@ class SignalModel:
 
     @property
     def _area_size(self):
-        return self._max_fragment_length+self._binding_affinity.size-1
+        return self._max_fragment_length+len(self._binding_affinity)-1
 
     @property
     def _background_prob(self):
@@ -89,8 +113,8 @@ class SignalModel:
         return res
 
     def _simulate_foreground(self, rng):
-        pos = rng.choice(np.arange(self._binding_affinity.size), p=self._binding_affinity)
-        fragment_length = rng.choice(np.arange(self._max_fragment_length+1), p=self._fragment_length_distribution)
+        pos = rng.choice(np.arange(len(self._binding_affinity)), p=self._binding_affinity.to_array())
+        fragment_length = rng.choice(np.arange(self._max_fragment_length+1), p=self._fragment_length_distribution.to_array())
         reverse = rng.choice([True, False])
         if not reverse:
             return pos+self._max_fragment_length-fragment_length, '+'
