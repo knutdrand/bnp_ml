@@ -5,6 +5,14 @@ import matplotlib.pyplot as plt
 from abc import ABC, abstractmethod
 import jax
 import dataclasses
+from typing import Protocol
+
+class Distribution:
+    def log_pmf(self, *data):
+        return NotImplemented
+    
+    def sample(self, sample_shape):
+        return NotImplemented
 
 
 def get_var(information):
@@ -21,7 +29,7 @@ def get_log_likelihood_function(distribution_class: type, data: torch.Tensor):
     return log_likelihood_function
 
 
-def estimate_fisher_information(model: torch.distributions.Distribution, n=10000000):
+def estimate_fisher_information(model: Distribution, n=10000000):
     n //= math.prod(model.event_shape)
     x = model.sample((n,))
     f = get_log_likelihood_function(model.__class__, x)
