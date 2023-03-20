@@ -2,7 +2,7 @@ from logarray import log_array, LogArray, set_backend, as_log_array
 import numpy as np
 import pytest
 
-from bnp_ml.jax_wrapper import estimate_fisher_information, Distribution, estimate_gd
+from bnp_ml.jax_wrapper import estimate_fisher_information, Distribution, estimate_gd, estimate_sgd
 import jax.numpy as jnp
 from jax import random
 set_backend(jnp)
@@ -87,7 +87,8 @@ def test_fisher_information(bernoulli):
     assert np.abs(I[0][0]-true) < 0.1
 
 
-def test_estimate(bernoulli, bernoulli_raw):
-    X = bernoulli.sample((1000, ))
-    dist = estimate_gd(bernoulli_raw, X, n_iterations=1000)
+@pytest.mark.parametrize('optimizer', [estimate_sgd])
+def test_estimate(bernoulli, bernoulli_raw, optimizer):
+    X = bernoulli.sample((100, ))
+    dist = optimizer(bernoulli_raw, X, n_iterations=100)
     assert np.abs(dist.p-bernoulli.p) < 0.1

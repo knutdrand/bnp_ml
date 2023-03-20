@@ -45,3 +45,33 @@ def estimate_gd(distribution, data, learning_rate=0.01, n_iterations=100):
         grads = grad_func(*distribution.parameters)
         distribution = distribution.__class__(*(param-grad*learning_rate for param, grad in zip(distribution.parameters, grads)))
     return distribution
+
+
+def estimate_sgd(distribution, data, learning_rate=0.01, n_iterations=100):
+    import optax
+    optimizer = optax.sgd(learning_rate)
+    params = distribution.parameters
+    opt_state = optimizer.init(params)
+    if not isinstance(data, tuple):
+        data = (data, )
+    def loss_func(params, data):
+        return -np.mean(distribution.__class__(*params).log_prob(*data))
+
+    for _ in range(1000):
+        grads = jax.grad(loss_func)(params, data)
+        updates, opt_state = optimizer.update(grads, opt_state)
+        params = optax.apply_updates(params, updates)
+    return distribution.__class__(*params)
+
+    
+    # Initialize parameters of the model + optimizer.
+
+    if not isinstance(data, tuple):
+        data = (data, )
+    for i in range(n_iterations):
+        grad_func = jax.grad(lambda *params: -np.mean(distribution.__class__(*params).log_prob(*data)),
+                             argnums=list(range(len(distribution.parameters))))
+        grads = grad_func(*distribution.parameters)
+        distribution = distribution.__class__(*(param-grad*learning_rate for param, grad in zip(distribution.parameters, grads)))
+    return distribution
+

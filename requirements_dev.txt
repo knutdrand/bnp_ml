@@ -11,3 +11,5 @@ hypothesis
 coverage
 pytest-cov
 build
+jax
+optax
