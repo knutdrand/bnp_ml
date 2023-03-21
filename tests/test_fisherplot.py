@@ -32,7 +32,7 @@ def test_fisher_xy(bernoulli):
     assert table['z_score'].shape == (4, )
 
 
-@pytest.mark.xfail
+# @pytest.mark.xfail
 def test_fisher_normal(normal):
     table = fisher_table(normal, estimate_normal, sample_sizes=np.arange(1, 5))
     assert table['sample_size'].shape == (8, )
