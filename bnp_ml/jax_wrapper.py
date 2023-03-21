@@ -1,22 +1,50 @@
 import numpy as np
 from typing import Protocol
 import jax
+from jax import random
 import math
 
 
-def class_wrapper(distribution_class, param_names):
+def class_wrapper(distribution_class, param_names, seed):
+    _, seed = random.split(seed)
+
     class NewClass:
         def __init__(self, *args, **kwargs):
-            self._dist = distribution_class(*args, **kwargs)
+            for name, arg in zip(param_names, args):
+                kwargs[name] = arg
+            self._dist = distribution_class(**kwargs)
+            self._seed = seed
 
-        def log_pmf(self, *args, **kwargs):
-            return self._dist.log_pmf(*args, **kwargs)
+        def __getattr__(self, name):
+            if name in param_names:
+                return getattr(self._dist, name)
+            raise AttributeError(f'{distribution_class} object has no attribute {name}')
+
+        def __setattr__(self, name, value):
+            if name in param_names:
+                setattr(self._dist, name, value)
+            else:
+                super().__setattr__(name, value)
+
+        def log_prob(self, *args, **kwargs):
+            return self._dist.log_prob(*args, **kwargs)
     
-        def sample(self, *args, **kwargs):
-            return self._dist.sample(*args, **kwargs)
+        def sample(self, shape, **kwargs):
+            print(self._dist)
+            kwargs['seed'], self._seed = random.split(self._seed)
+            kwargs['sample_shape'] = shape
+            return self._dist.sample(**kwargs)
             
-        def params(self):
-            return tuple(getattr(self._dist, param_name) for param_name in param_names)
+        @property
+        def parameters(self):
+            return tuple(getattr(self._dist, param_name)
+                         for param_name in param_names)
+
+        @property
+        def event_shape(self):
+            return self._dist.event_shape
+
+    return NewClass
 
 
 class Wrapper:
