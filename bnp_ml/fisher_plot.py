@@ -16,10 +16,12 @@ def fisher_table(dist, estimator, sample_sizes=None, n_fisher=100000):
         sample_sizes = np.arange(1, 5)*10
     fisher_info = linear_fisher_information(dist, n=n_fisher)
     # sds = np.sqrt(1/(sample_sizes*fisher_info))
+
     estimates = [estimator(dist.__class__(*[0.6 for param in dist.parameters]),
                            dist.sample((sample_size, )))
                  for sample_size in sample_sizes]
     errors = [param_diffs(estimate, dist) for estimate in estimates]
+
     return {'sample_size': sample_sizes,
             'z_score': np.array(errors).ravel()/np.sqrt(1/(sample_sizes*fisher_info[0][0]))}
 
