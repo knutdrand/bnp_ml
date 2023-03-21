@@ -89,6 +89,6 @@ def test_fisher_information(bernoulli):
 
 @pytest.mark.parametrize('optimizer', [estimate_sgd])
 def test_estimate(bernoulli, bernoulli_raw, optimizer):
-    X = bernoulli.sample((100, ))
-    dist = optimizer(bernoulli_raw, X, n_iterations=100)
-    assert np.abs(dist.p-bernoulli.p) < 0.1
+    X = bernoulli.sample((200, ))
+    dist = optimizer(bernoulli_raw, X, n_iterations=1000)
+    assert np.abs(dist.p-bernoulli.p) < 0.01

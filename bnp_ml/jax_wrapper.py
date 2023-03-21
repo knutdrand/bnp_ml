@@ -4,6 +4,36 @@ import jax
 import math
 
 
+def class_wrapper(distribution_class, param_names):
+    class NewClass:
+        def __init__(self, *args, **kwargs):
+            self._dist = distribution_class(*args, **kwargs)
+
+        def log_pmf(self, *args, **kwargs):
+            return self._dist.log_pmf(*args, **kwargs)
+    
+        def sample(self, *args, **kwargs):
+            return self._dist.sample(*args, **kwargs)
+            
+        def params(self):
+            return tuple(getattr(self._dist, param_name) for param_name in param_names)
+
+
+class Wrapper:
+    def __init__(self, distribution, param_names):
+        self._dist = distribution
+        self._param_names = param_names
+
+    def log_pmf(self, *args, **kwargs):
+        return self._dist.log_pmf
+
+    def params(self):
+        return tuple(getattr(self._dist, param_name) for param_name in self._param_names)
+
+    def sample(self, *args, **kwargs):
+        return self._dist.sample(*args, **kwargs)
+
+
 class Distribution(Protocol):
     def log_pmf(self, *data) -> np.ndarray:
         return NotImplemented
@@ -32,6 +62,12 @@ def estimate_fisher_information(model: Distribution, n: int = 10000000):
     f = get_log_likelihood_function(model.__class__, x)
     hessian = jax.hessian(f, argnums=list(range(len(model.parameters))))(*model.parameters)
     return hessian
+
+
+def linear_fisher_information(model: Distribution, n: int = 10000000):
+    h = estimate_fisher_information(model, n)
+    return tuple(np.atleast_2d(row[i]).diagonal() for i, row in enumerate(h))
+
 # return tuple(tuple(-np.mean(h, axis=-1) for h in row)
 #                  for row in hessian)
 
@@ -54,10 +90,11 @@ def estimate_sgd(distribution, data, learning_rate=0.01, n_iterations=100):
     opt_state = optimizer.init(params)
     if not isinstance(data, tuple):
         data = (data, )
+
     def loss_func(params, data):
         return -np.mean(distribution.__class__(*params).log_prob(*data))
 
-    for _ in range(1000):
+    for _ in range(n_iterations):
         grads = jax.grad(loss_func)(params, data)
         updates, opt_state = optimizer.update(grads, opt_state)
         params = optax.apply_updates(params, updates)
@@ -74,4 +111,3 @@ def estimate_sgd(distribution, data, learning_rate=0.01, n_iterations=100):
         grads = grad_func(*distribution.parameters)
         distribution = distribution.__class__(*(param-grad*learning_rate for param, grad in zip(distribution.parameters, grads)))
     return distribution
-

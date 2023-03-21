@@ -1,8 +1,12 @@
 from bnp_ml.bernoulli import Bernoulli
-from bnp_ml.jax_wrapper import estimate_fisher_information, estimate_sgd, linear_fisher_information, estimate_gd
+from bnp_ml.jax_wrapper import estimate_fisher_information, estimate_sgd, linear_fisher_information, estimate_gd, Wrapper
+from bnp_ml.fisher_plot import fisher_plot2
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import plotly.express as px
+from functools import partial
+from distrax import Normal
 
 def fisher_plot():
     dist = Bernoulli(0.4)
@@ -20,39 +24,15 @@ def fisher_plot():
     plt.show()
 
 
-def param_diffs(dist_1, dist_2):
-    return (dist_2.p-dist_1.p, )
-    return tuple(p2-p1 for p2, p1 in zip(dist_1.parameters, dist_2.parameters))
+def estimate_p(dist, X):
+    # dist.p = X.sum()/X.size
+    return dist.__class__(X.sum()/X.size)
 
 
-def fisher_plot2(dist):
-    dist = Bernoulli(0.4)
-    print('getting fisher information')
-    fisher_info = linear_fisher_information(dist, n=100000)
-    print(fisher_info)
-    sample_sizes = np.arange(1, 20)*10
-    sds = np.sqrt(1/(sample_sizes*fisher_info))
-    print(sds)
-    estimates = [estimate_sgd(dist.__class__(*[0.6 for param in dist.parameters]),
-                              dist.sample((sample_size, )),
-                              n_iterations=1000)
-                 for sample_size in sample_sizes]
-    # print([estimate.p for estimate in estimates])
-    # errors = [param_diffs(estimate, dist) for estimate in estimates]
-    plt.scatter(sample_sizes, [(estimate_sgd(dist.__class__(*[0.6 for param in dist.parameters]), dist.sample((sample_size, )), n_iterations=100).p-dist.p) for sample_size, sd in zip(sample_sizes, sds)])
-    plt.show()
-    # errors = [(estimate_sgd(dist.__class__(*[0.6 for param in dist.parameters]), dist.sample((sample_size, )), n_iterations=100).p-dist.p) for sample_size, sd in zip(sample_sizes, sds)]
-    print(np.abs(errors))
-    print(np.array(errors).shape)
-    plt.scatter(sample_sizes, np.abs(np.array(errors).ravel()))
-    plt.show()
-    for error_group, info_group in zip(zip(*errors), fisher_info):
-        print('>>>', np.array(error_group))
-        for error, info in zip(error_group, info_group):
-            print('>>>>>>', error_group)
-            plt.scatter(sample_sizes, error/np.sqrt(1/(sample_sizes*info)))
-
-    plt.show()
-
-
-fisher_plot2(Bernoulli(0.4))
+def estimate_normal(dist, X):
+    mu = np.sum(X)/X.size
+    sigma = np.sum((X-mu)**2)/X.size
+    return dist.__class(mu, sigma)
+# fisher_plot2(Bernoulli(0.4), estimate_p)
+# fisher_plot2(Bernoulli(0.4), estimate_sgd)
+fisher_plot2(Normal(0.0, 1.0), estimate_parameters)
