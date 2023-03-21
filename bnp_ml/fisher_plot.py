@@ -23,7 +23,8 @@ def fisher_table(dist, estimator, sample_sizes=None, n_fisher=100000):
 
     table = defaultdict(list)
     for sample_size in sample_sizes:
-        estimate = estimator(dist.__class__(*[0.6 for param in dist.parameters]),
+        estimate = estimator(dist.__class__(*[np.full_like(param, 0.6)
+                                              for param in dist.parameters]),
                              dist.sample((sample_size, )))
 
         for i, error in enumerate(param_diffs(estimate, dist)):

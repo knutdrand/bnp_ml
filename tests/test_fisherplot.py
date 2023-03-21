@@ -1,7 +1,8 @@
 import pytest
-from distrax import Bernoulli, Normal
+# from distrax import Bernoulli, Normal
 from bnp_ml.jax_wrapper import class_wrapper
 from bnp_ml.fisher_plot import fisher_table
+from bnp_ml.distributions import Normal, Bernoulli, MultiVariateNormalDiag
 import jax
 import numpy as np
 
@@ -18,12 +19,19 @@ def estimate_normal(dist, X):
 
 @pytest.fixture
 def bernoulli():
-    return class_wrapper(Bernoulli, ['probs'], jax.random.PRNGKey(123))(0.4)
+    return Bernoulli(0.4)
+# return class_wrapper(Bernoulli, ['probs'], jax.random.PRNGKey(123))(0.4)
 
 
 @pytest.fixture
 def normal():
-    return class_wrapper(Normal, ['loc', 'scale'], jax.random.PRNGKey(123))(0.0, 1.0)
+    return Normal(0.0, 1.0)
+
+
+@pytest.fixture
+def multivariate_normal():
+    return MultiVariateNormalDiag(np.array([1.0, 2.0]),
+                                  np.array([2.0, 3.0]))
 
 
 def test_fisher_xy(bernoulli):
@@ -37,4 +45,10 @@ def test_fisher_normal(normal):
     table = fisher_table(normal, estimate_normal, sample_sizes=np.arange(1, 5))
     assert len(table['sample_size']) == 8
     assert len(table['z_score']) == 8
+
+
+def test_fisher_multivariatenormal(multivariate_normal):
+    table = fisher_table(multivariate_normal, estimate_normal, sample_sizes=np.arange(1, 5))
+    assert len(table['sample_size']) == 16
+    assert len(table['z_score']) == 16
 
