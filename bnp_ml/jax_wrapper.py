@@ -6,21 +6,24 @@ from jax import random
 import math
 
 
-def mixture_class(class_1, class_2):
+def mixture_class(class_1, class_2, seed):
     class MixtureOfTwo:
-        def __init__(self, prob_a, component_a, component_b):
+        def __init__(self, prob_a, *args):
+            component_a = class_1(*args[:len(class_1.parameter_names())])
+            component_b = class_2(*args[len(class_1.parameter_names()):])
             self._dist = distrax.MixtureOfTwo(prob_a, component_a._dist, component_b._dist)
             self.prob_a = prob_a
             self.component_a = component_a
             self.component_b = component_b
-    
+            self._seed = seed
+
         @property
         def parameters(self):
-            return (self.prob_a, ) + self.component_a.parameters() + self.component_b.parameters()
+            return (self.prob_a, ) + self.component_a.parameters + self.component_b.parameters
     
-        @property
+        @classmethod
         def parameter_names(self):
-            return ['prob_a'] + ['A_'+ name for name in self.component_a.parameter_names] + ['B_' + name for name in self.component_b.parameter_names]
+            return ['prob_a'] + ['A_'+ name for name in class_1.parameter_names()] + ['B_' + name for name in class_2.parameter_names()]
     
         def log_prob(self, *args, **kwargs):
             return self._dist.log_prob(*args, **kwargs)
@@ -29,6 +32,10 @@ def mixture_class(class_1, class_2):
             kwargs['seed'], self._seed = random.split(self._seed)
             kwargs['sample_shape'] = shape
             return self._dist.sample(**kwargs)
+
+        @property
+        def event_shape(self):
+            return self.component_a.event_shape
     return MixtureOfTwo
 
 

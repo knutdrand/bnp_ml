@@ -30,9 +30,9 @@ def multivariate_normal():
                                   np.array([2.0, 3.0]))
 
 
-# @pytest.fixture
+@pytest.fixture
 def mixed_normal():
-    cls = mixture_class(Normal, Normal)
+    cls = mixture_class(Normal, Normal, jax.random.PRNGKey(12345))
     return cls(0.5, 0.0, 1.0, 2.0, 3.0)
 
 
@@ -54,6 +54,6 @@ def test_fisher_multivariatenormal(multivariate_normal):
     assert len(table['sample_size']) == 16
     assert len(table['z_score']) == 16
 
-@pytest.mark.xfail
+
 def test_fisher_mixed(mixed_normal):
-    table = fisher_table(multivariate_normal, estimate_mixed_normal, sample_sizes=np.arange(1, 5))    
+    table = fisher_table(mixed_normal, estimate_mixed_normal, sample_sizes=np.arange(1, 5))    
