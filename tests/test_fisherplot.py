@@ -1,20 +1,11 @@
 import pytest
 # from distrax import Bernoulli, Normal
-from bnp_ml.jax_wrapper import class_wrapper
+from bnp_ml.jax_wrapper import class_wrapper, mixture_class
 from bnp_ml.fisher_plot import fisher_table
-from bnp_ml.distributions import Normal, Bernoulli, MultiVariateNormalDiag
+from bnp_ml.distributions import Normal, Bernoulli, MultiVariateNormalDiag, MixtureOfTwo
+from bnp_ml.estimators import estimate_p, estimate_normal, estimate_mixed_normal
 import jax
 import numpy as np
-
-
-def estimate_p(dist, X):
-    return dist.__class__(X.sum()/X.size)
-
-
-def estimate_normal(dist, X):
-    mu = np.sum(X, axis=0)/np.array(X.shape)
-    sigma = np.sum((X-mu)**2, axis=0)/np.array(X.shape)
-    return dist.__class__(mu, sigma)
 
 
 @pytest.fixture
@@ -29,9 +20,20 @@ def normal():
 
 
 @pytest.fixture
+def normal2():
+    return Normal(2.0, 3.0)
+
+
+@pytest.fixture
 def multivariate_normal():
     return MultiVariateNormalDiag(np.array([1.0, 2.0]),
                                   np.array([2.0, 3.0]))
+
+
+# @pytest.fixture
+def mixed_normal():
+    cls = mixture_class(Normal, Normal)
+    return cls(0.5, 0.0, 1.0, 2.0, 3.0)
 
 
 def test_fisher_xy(bernoulli):
@@ -52,3 +54,6 @@ def test_fisher_multivariatenormal(multivariate_normal):
     assert len(table['sample_size']) == 16
     assert len(table['z_score']) == 16
 
+@pytest.mark.xfail
+def test_fisher_mixed(mixed_normal):
+    table = fisher_table(multivariate_normal, estimate_mixed_normal, sample_sizes=np.arange(1, 5))    

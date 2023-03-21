@@ -32,9 +32,9 @@ def fisher_table(dist, estimator, sample_sizes=None, n_fisher=100000):
 
         for i, errors in enumerate(param_diffs(estimate, dist)):
             for j, error in enumerate(np.atleast_1d(errors)):
-                sd = 1/np.sqrt(sample_size*fisher_info[i][0])
+                sd = 1/np.sqrt(sample_size*fisher_info[i][j])
                 table['sample_size'].append(sample_size)
-                table['param_name'].append(dist.parameter_names[i])
+                table['param_name'].append(dist.parameter_names()[i])
                 table['param_idx'].append(str(j))
                 table['z_score'].append(error/sd)
     return table

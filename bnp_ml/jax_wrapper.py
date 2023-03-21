@@ -1,8 +1,35 @@
 import numpy as np
 from typing import Protocol
 import jax
+import distrax
 from jax import random
 import math
+
+
+def mixture_class(class_1, class_2):
+    class MixtureOfTwo:
+        def __init__(self, prob_a, component_a, component_b):
+            self._dist = distrax.MixtureOfTwo(prob_a, component_a._dist, component_b._dist)
+            self.prob_a = prob_a
+            self.component_a = component_a
+            self.component_b = component_b
+    
+        @property
+        def parameters(self):
+            return (self.prob_a, ) + self.component_a.parameters() + self.component_b.parameters()
+    
+        @property
+        def parameter_names(self):
+            return ['prob_a'] + ['A_'+ name for name in self.component_a.parameter_names] + ['B_' + name for name in self.component_b.parameter_names]
+    
+        def log_prob(self, *args, **kwargs):
+            return self._dist.log_prob(*args, **kwargs)
+    
+        def sample(self, shape, **kwargs):
+            kwargs['seed'], self._seed = random.split(self._seed)
+            kwargs['sample_shape'] = shape
+            return self._dist.sample(**kwargs)
+    return MixtureOfTwo
 
 
 def class_wrapper(distribution_class, param_names, seed):
@@ -39,7 +66,7 @@ def class_wrapper(distribution_class, param_names, seed):
             return tuple(getattr(self._dist, param_name)
                          for param_name in param_names)
 
-        @property
+        @classmethod
         def parameter_names(self):
             return param_names
         
