@@ -11,6 +11,10 @@ def param_diffs(dist_1, dist_2):
     return tuple(p2-p1 for p2, p1 in zip(dist_2.parameters, dist_1.parameters))
 
 
+def plot_table(table):
+    return px.scatter(data_frame=table, x='sample_size', y='z_score', color='param_idx', marginal_y='histogram')
+
+
 def fisher_table(dist, estimator, sample_sizes=None, n_fisher=100000):
     if sample_sizes is None:
         sample_sizes = np.arange(1, 5)*10
@@ -35,6 +39,8 @@ def fisher_table(dist, estimator, sample_sizes=None, n_fisher=100000):
 
     return {'sample_size': sample_sizes,
             'z_score': np.array(errors).ravel()/np.sqrt(1/(sample_sizes*fisher_info[0][0]))}
+
+
 
 
 def fisher_plot2(dist, estimator):

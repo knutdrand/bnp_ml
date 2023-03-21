@@ -30,7 +30,6 @@ def class_wrapper(distribution_class, param_names, seed):
             return self._dist.log_prob(*args, **kwargs)
     
         def sample(self, shape, **kwargs):
-            print(self._dist)
             kwargs['seed'], self._seed = random.split(self._seed)
             kwargs['sample_shape'] = shape
             return self._dist.sample(**kwargs)
