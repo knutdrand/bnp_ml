@@ -12,7 +12,7 @@ def param_diffs(dist_1, dist_2):
 
 
 def plot_table(table):
-    return px.scatter(data_frame=table, x='sample_size', y='z_score', color='param_idx', marginal_y='histogram')
+    return px.scatter(data_frame=table, x='sample_size', y='z_score', facet_row='param_name', marginal_y='histogram')
 
 
 def fisher_table(dist, estimator, sample_sizes=None, n_fisher=100000):
@@ -29,8 +29,9 @@ def fisher_table(dist, estimator, sample_sizes=None, n_fisher=100000):
         for i, error in enumerate(param_diffs(estimate, dist)):
             sd = 1/np.sqrt(sample_size*fisher_info[i][0])
             table['sample_size'].append(sample_size)
-            table['param_idx'].append(i)
+            table['param_name'].append(dist.parameter_names[i])
             table['z_score'].append(error/sd)
+    return table
     return {name: np.array(l) for name, l in table.items()}
     estimates = [estimator(dist.__class__(*[0.6 for param in dist.parameters]),
                            dist.sample((sample_size, )))
@@ -39,8 +40,6 @@ def fisher_table(dist, estimator, sample_sizes=None, n_fisher=100000):
 
     return {'sample_size': sample_sizes,
             'z_score': np.array(errors).ravel()/np.sqrt(1/(sample_sizes*fisher_info[0][0]))}
-
-
 
 
 def fisher_plot2(dist, estimator):

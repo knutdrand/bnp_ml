@@ -11,8 +11,8 @@ def estimate_p(dist, X):
 
 
 def estimate_normal(dist, X):
-    mu = np.sum(X)/X.size
-    sigma = np.sum((X-mu)**2)/X.size
+    mu = np.sum(X, axis=0)/np.array(X.shape)
+    sigma = np.sum((X-mu)**2, axis=0)/np.array(X.shape)
     return dist.__class__(mu, sigma)
 
 
@@ -28,13 +28,13 @@ def normal():
 
 def test_fisher_xy(bernoulli):
     table = fisher_table(bernoulli, estimate_p, sample_sizes=np.arange(1, 5))
-    assert table['sample_size'].shape == (4, )
-    assert table['z_score'].shape == (4, )
+    assert len(table['sample_size']) == 4
+    assert len(table['z_score']) == 4
 
 
 # @pytest.mark.xfail
 def test_fisher_normal(normal):
     table = fisher_table(normal, estimate_normal, sample_sizes=np.arange(1, 5))
-    assert table['sample_size'].shape == (8, )
-    assert table['z_score'].shape == (8, )
+    assert len(table['sample_size']) == 8
+    assert len(table['z_score']) == 8
 

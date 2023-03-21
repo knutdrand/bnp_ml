@@ -40,6 +40,10 @@ def class_wrapper(distribution_class, param_names, seed):
                          for param_name in param_names)
 
         @property
+        def parameter_names(self):
+            return param_names
+        
+        @property
         def event_shape(self):
             return self._dist.event_shape
 

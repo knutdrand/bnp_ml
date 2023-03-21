@@ -9,6 +9,7 @@ import plotly.express as px
 from functools import partial
 # from distrax import Normal
 
+
 def fisher_plot():
     dist = Bernoulli(0.4)
     print('getting fisher information')
@@ -32,12 +33,12 @@ def estimate_p(dist, X):
 
 def estimate_normal(dist, X):
     mu = np.sum(X)/X.size
-    sigma = np.sum((X-mu)**2)/X.size
+    sigma = np.sqrt(np.sum((X-mu)**2)/X.size)
     return dist.__class__(mu, sigma)
 
 
 # t = fisher_table(Bernoulli(0.4), estimate_p, sample_sizes=np.arange(1, 200))
-t = fisher_table(Normal(0.0, 1.0), estimate_normal, sample_sizes=np.arange(1, 200))
+t = fisher_table(Normal(0.0, 1.0), estimate_normal, sample_sizes=np.arange(1, 100))
 # t = fisher_table(Bernoulli(0.4), estimate_p, sample_sizes=np.arange(1, 200))
 plot_table(t).show()
 # fisher_plot2(Bernoulli(0.4), estimate_sgd)
