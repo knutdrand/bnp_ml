@@ -28,6 +28,7 @@ def _test_backgroun_prob(signal_model):
     assert_approx_equal(sum(signal_model.background_prob for i in range(signal_model._area_size)),
                         0.5*0.5)
 
+
 @pytest.mark.xfail
 def test_probability(signal_model):
     pos_prob = sum(signal_model.probability(i, '+') for i in range(signal_model._area_size))
@@ -37,6 +38,7 @@ def test_probability(signal_model):
     neg_prob = sum(signal_model.probability(i+max_fragment_length-1, '-') for i in range(signal_model._area_size))
     assert_approx_equal(pos_prob.to_array(),
                         0.5)
+
 
 @pytest.mark.xfail
 def test_simulate(signal_model):
