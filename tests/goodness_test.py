@@ -8,11 +8,13 @@ observed_data = [8, 6, 10, 7, 8, 11, 9]
 expected_data = [9, 8, 11, 8, 10, 7, 6]
 
 
-def assert_sample_logprob_fit(model, n_samples: int = 100, alpha: float=0.05):
+def assert_sample_logprob_fit(model, n_samples: int = 500, alpha: float=0.05):
     observed = Counter(model.sample(np.random.default_rng(), (n_samples,)))
     print(list(sorted(observed.keys())))
     assert_approx_equal(sum(np.exp(model.log_prob(key)) for key in observed), 1)
-    expected = [n_samples*np.exp(model.log_prob(key)) for key in observed]
+    expected = np.array([n_samples*np.exp(model.log_prob(key)) for key in observed])
+    assert_approx_equal(sum(observed.values()), np.sum(expected))
+    expected *= sum(observed.values())/np.sum(expected)
     assert_goodness_of_fit(list(observed.values()), expected, alpha)
 
 

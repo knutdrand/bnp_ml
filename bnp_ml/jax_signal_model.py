@@ -102,14 +102,23 @@ class JaxSignalModel(_JaxSignalModel):
     def _sample_one(self, rng):
         pos = rng.choice(np.arange(self._area_size),
                          p=self.binding_affinity)
-        fragment_length = rng.choice(np.arange(self._max_fragment_length+1),
-                                     p=self.fragment_length_distribution)
         reverse = rng.choice([True, False])
         if not reverse:
-            return pos + self._max_fragment_length-fragment_length, '+'
+            max_fragment_length = min(self._max_fragment_length, pos+1)
+        else:
+            max_fragment_length = min(self._max_fragment_length, self._area_size-pos)
+        p = self.fragment_length_distribution[:max_fragment_length+1]
+        p /= p.sum()
+        fragment_length = rng.choice(np.arange(max_fragment_length+1),
+                                     p=p)
         if reverse:
-            return pos + self._max_fragment_length-1 + fragment_length-1, '-'
+            pos = pos + fragment_length-1
+        else:
+            pos = pos - fragment_length + 1
 
+        strand = '-' if reverse else '+'
+        assert pos >= 0 and pos < self._area_size, (reverse, pos, fragment_length)
+        return pos, strand
 
 
     # return xp.sum(
