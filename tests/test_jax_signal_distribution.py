@@ -2,7 +2,7 @@ import pytest
 import torch
 from numpy.testing import assert_approx_equal
 from bnp_ml.jax_signal_model import JaxSignalModel
-from bnp_ml.ml_check import estimate_fisher_information
+from bnp_ml.jax_wrapper import estimate_fisher_information
 from collections import Counter
 from logarray.logarray import log_array
 from .goodness_test import assert_sample_logprob_fit
@@ -59,6 +59,5 @@ def test_back_forth(signal_model, rng):
     signal_model.log_prob(signal_model.sample(rng, (10, )))
 
 
-@pytest.mark.xfail
-def test_fisher_information(torch_model):
-    estimate_fisher_information(torch_model, 100)
+def test_fisher_information(signal_model, rng):
+    estimate_fisher_information(signal_model, 100, rng)

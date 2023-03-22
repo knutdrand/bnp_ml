@@ -29,9 +29,12 @@ def get_log_likelihood_function(distribution_class: type, data: torch.Tensor):
     return log_likelihood_function
 
 
-def estimate_fisher_information(model: Distribution, n=10000000):
+def estimate_fisher_information(model: Distribution, n=10000000, rng=None):
     n //= math.prod(model.event_shape)
-    x = model.sample((n,))
+    if rng is not None:
+        x = model.sample(rng, (n,))
+    else:
+        x = model.sample((n,))
     f = get_log_likelihood_function(model.__class__, x)
     return jax.hessian(f)(*(getattr(model, key).numpy() for key in model.arg_constraints))
 # H = torch.autograd.functional.hessian(f, tuple(getattr(model, key) for key in model.arg_constraints))

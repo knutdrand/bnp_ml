@@ -5,6 +5,9 @@ from logarray.logarray import log_array
 import dataclasses
 from typing import Tuple, List, Union
 from bionumpy import bnpdataclass
+import jax.numpy as jnp
+
+xp = jnp
 
 
 class ReadStart:
@@ -19,11 +22,11 @@ class JaxSignalModel:
         # self._rng = np.random.default_rng()
         self._max_fragment_length = len(self.fragment_length_distribution)-1
         self._area_size = len(self.binding_affinity)
-        self._padded_affinity = np.pad(self.binding_affinity, (self._max_fragment_length-1, ))
+        self._padded_affinity = jnp.pad(self.binding_affinity, (self._max_fragment_length-1, ))
 
     def _sample_one(self, rng):
         pos = rng.choice(np.arange(self._area_size),
-                               p=self.binding_affinity)
+                         p=self.binding_affinity)
         fragment_length = rng.choice(np.arange(self._max_fragment_length+1),
                                      p=self.fragment_length_distribution)
         reverse = rng.choice([True, False])
@@ -36,22 +39,34 @@ class JaxSignalModel:
         return [self._sample_one(rng)
                 for _ in range(n)]
 
+    @property
+    def parameters(self):
+        return (self.binding_affinity, self.fragment_length_distribution)
+
+    @classmethod
+    def parameter_names(cls):
+        return ['binding_affinity', 'fragment_length_distribution']
+
+    @property
+    def event_shape(self):
+        return (1, )
+
     def sample(self, rng, shape):
         assert len(shape) == 1
         return self._sample_n(rng, math.prod(shape))
 
     def log_prob(self, X: Union[Tuple[int, str], List[Tuple[int, str]]]):
-        return np.log(self.probability(X))
+        return xp.log(self.probability(X))
 
     def probability(self, X: Union[Tuple[int, str], List[Tuple[int, str]]]):
         if isinstance(X, list):
-            return [self.probability(x) for x in X]
+            return xp.array([self.probability(x) for x in X])
         position, strand = X
         if strand == '+':
             index = slice(position, position+self._max_fragment_length)
         else:
             index = slice(position, position-self._max_fragment_length if position-self._max_fragment_length>=0 else None, -1)
-        return np.sum(
+        return xp.sum(
             self.fragment_length_distribution[1:] * 0.5*self._padded_affinity[index])
 
 

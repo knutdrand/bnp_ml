@@ -121,12 +121,33 @@ def get_log_likelihood_function(distribution_class: type, data: np.ndarray):
     return log_likelihood_function
 
 
-def estimate_fisher_information(model: Distribution, n: int = 10000000):
+def _estimate_fisher_information(model: Distribution, n: int = 10000000, rng=None):
     n //= math.prod(model.event_shape)
-    x = model.sample((n,))
+    if rng is not None:
+        x = model.sample(rng, (n,))
+    else:
+        x = model.sample((n,))
     f = get_log_likelihood_function(model.__class__, x)
     hessian = jax.hessian(f, argnums=list(range(len(model.parameters))))(*model.parameters)
     return hessian
+
+
+def get_log_likelihood_function(distribution_class: type, data: np.ndarray):
+    def log_likelihood_function(*args, **kwargs):
+        return -np.mean(distribution_class(*args, **kwargs).log_prob(data))
+    return log_likelihood_function
+
+
+def estimate_fisher_information(model: Distribution, n: int = 10000000, rng=None):
+    n //= math.prod(model.event_shape)
+    if rng is not None:
+        x = model.sample(rng, (n,))
+    else:
+        x = model.sample((n,))
+    f = lambda params, data: -np.mean(model.__class__(*params).log_prob(data))
+    hessian = jax.hessian(f)(model.parameters, x)
+    return hessian
+
 
 
 def linear_fisher_information(model: Distribution, n: int = 10000000):
