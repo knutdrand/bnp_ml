@@ -7,6 +7,7 @@ import jax
 import dataclasses
 from typing import Protocol
 
+
 class Distribution:
     def log_pmf(self, *data):
         return NotImplemented

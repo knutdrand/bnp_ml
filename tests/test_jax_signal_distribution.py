@@ -21,28 +21,18 @@ def signal_model():
     return JaxSignalModel(np.full(3, 1/3), np.arange(max_fragment_length+1)/10)
 
 
-# @pytest.fixture
-# def torch_model():
-#     return SignalModel(*(torch.tensor(a) for a in (
-#         np.full(3, 1/3),
-#         np.arange(max_fragment_length+1)/10,
-#         0.5)))
-
-
-def _test_backgroun_prob(signal_model):
-    assert_approx_equal(sum(signal_model.background_prob for i in range(signal_model._area_size)),
-                        0.5*0.5)
-
-
-@pytest.mark.xfail
-def test_probability(signal_model):
-    area_size = len(signal_model.binding_affinity)
-    pos_prob = sum(signal_model.probability(i, '+') for i in range(area_size))
-    assert_approx_equal(pos_prob.to_array(),
-                        0.5)
-    neg_prob = sum(signal_model.probability(i+max_fragment_length-1, '-') for i in range(signal_model._area_size))
-    assert_approx_equal(pos_prob.to_array(),
-                        0.5)
+def test_probability(signal_model: JaxSignalModel):
+    # domain_size = len(signal_model.binding_affinity) + max_fragment_length-1
+    domain = list(sorted(signal_model.domain()))
+    print(domain)
+    sum_prob = sum(signal_model.probability(x) for x in domain)
+    assert_approx_equal(sum_prob, 1)
+    # pos_probs = [signal_model.probability((i, '+')) for i in range(domain_size)]
+    # pos_prob = sum(pos_probs)
+    # print(np.array(pos_probs))
+    # assert_approx_equal(pos_prob, 0.5)
+    # neg_prob = sum(signal_model.probability((i+max_fragment_length-1, '-')) for i in range(domain_size))
+    # assert_approx_equal(neg_prob, 0.5)
 
 
 def test_simulate(signal_model):
