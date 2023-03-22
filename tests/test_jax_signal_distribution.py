@@ -2,7 +2,7 @@ import pytest
 import torch
 from numpy.testing import assert_approx_equal
 from bnp_ml.jax_signal_model import JaxSignalModel
-from bnp_ml.jax_wrapper import estimate_fisher_information
+from bnp_ml.jax_wrapper import estimate_fisher_information, estimate_sgd
 from collections import Counter
 from logarray.logarray import log_array
 from .goodness_test import assert_sample_logprob_fit
@@ -21,12 +21,35 @@ def signal_model():
     return JaxSignalModel(np.full(3, 1/3), np.arange(max_fragment_length+1)/10)
 
 
-def test_probability(signal_model: JaxSignalModel):
-    # domain_size = len(signal_model.binding_affinity) + max_fragment_length-1
-    domain = list(sorted(signal_model.domain()))
+@pytest.fixture
+def signal_model_big():
+    return JaxSignalModel(np.arange(1, 11)/55, np.arange(max_fragment_length+1)/10)
+
+
+@pytest.fixture
+def simulated_data(signal_model_big, rng):
+    return signal_model_big.sample(rng, (100, ))
+
+
+def assert_prob_is_one(model):
+    domain = list(sorted(model.domain()))
     print(domain)
-    sum_prob = sum(signal_model.probability(x) for x in domain)
+    sum_prob = sum(model.probability(x) for x in domain)
     assert_approx_equal(sum_prob, 1)
+
+
+def test_probability(signal_model: JaxSignalModel):
+    assert_prob_is_one(signal_model)
+
+
+def test_probability_big(signal_model_big: JaxSignalModel):
+    assert_prob_is_one(signal_model_big)
+
+    # # domain_size = len(signal_model.binding_affinity) + max_fragment_length-1
+    # domain = list(sorted(signal_model.domain()))
+    # print(domain)
+    # sum_prob = sum(signal_model.probability(x) for x in domain)
+    # assert_approx_equal(sum_prob, 1)
     # pos_probs = [signal_model.probability((i, '+')) for i in range(domain_size)]
     # pos_prob = sum(pos_probs)
     # print(np.array(pos_probs))
@@ -37,6 +60,24 @@ def test_probability(signal_model: JaxSignalModel):
 
 def test_simulate(signal_model):
     assert_sample_logprob_fit(signal_model)
+
+
+def test_simulate_big(signal_model_big):
+    assert_sample_logprob_fit(signal_model_big)
+
+
+def test_estimation(signal_model_big, simulated_data):
+    model = signal_model_big.__class__(
+        np.full_like(
+            signal_model_big.binding_affinity,
+            1/len(signal_model_big.binding_affinity)),
+        np.full_like(
+            signal_model_big.fragment_length_distribution,
+            1/len(signal_model_big.fragment_length_distribution)))
+
+    estimate_sgd(model, simulated_data, n_iterations=5)
+
+
     # rng = np.random.default_rng()
     # counter = Counter(signal_model.sample(rng, (10000,)))
     # s = sum(counter.values())

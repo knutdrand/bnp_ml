@@ -13,7 +13,7 @@ def mixture_class(class_1, class_2, seed):
             component_b = class_2(*args[len(class_1.parameter_names()):])
             self._dist = distrax.MixtureOfTwo(prob_a, component_a._dist, component_b._dist)
             self.prob_a = prob_a
-            self.component_a = component_a
+            self.cnomponent_a = component_a
             self.component_b = component_b
             self._seed = seed
 

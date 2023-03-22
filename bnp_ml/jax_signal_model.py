@@ -7,17 +7,16 @@ import jax.numpy as jnp
 xp = jnp
 
 
-@bnpdataclass.bnpdataclass
-class ReadStart:
-    position: int
-    strand: str
+# @bnpdataclass.bnpdataclass
+# class ReadStart:
+#     position: int
+#     strand: str
 
 
 class _JaxSignalModel:
     def __init__(self, binding_affinity, fragment_length_distribution):
         self.binding_affinity = binding_affinity
         self.fragment_length_distribution = fragment_length_distribution
-        # self._rng = np.random.default_rng()
         self._max_fragment_length = len(self.fragment_length_distribution)-1
         self._area_size = len(self.binding_affinity)
         self._padded_affinity = jnp.pad(self.binding_affinity, (self._max_fragment_length-1, ))
@@ -81,6 +80,12 @@ class _JaxSignalModel:
 
 
 class JaxSignalModel(_JaxSignalModel):
+    ''' THis one is parameterized a bit wierdly. 
+    binding affinity is the probability that a read coming a tf binding to a position,
+    comes from a givn position, conditioned on the read falling in the desired windo. 
+    Thus is should be lower on the edges
+    '''
+
     def probability(self, X: Union[Tuple[int, str], List[Tuple[int, str]]]):
         if isinstance(X, list):
             return xp.array([self.probability(x) for x in X])
