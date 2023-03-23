@@ -102,7 +102,6 @@ class JaxSignalModel(_JaxSignalModel):
         affinity = self.binding_affinity[index]
         length_prob = self.fragment_length_distribution[1:1+len(affinity)]
         length_prob = length_prob/length_prob.sum()
-        print(affinity, length_prob)
         return xp.sum(0.5*affinity*length_prob/length_prob.sum())
 
     def domain(self):
@@ -111,23 +110,39 @@ class JaxSignalModel(_JaxSignalModel):
     def _sample_one(self, rng):
         pos = rng.choice(np.arange(self._area_size),
                          p=np.array(self.binding_affinity))
-        reverse = rng.choice([True, False])
+        pre = self.fragment_length_distribution[1:pos+2]
+        post = self.fragment_length_distribution[1:(self._area_size-pos+1)]
+        s_pos = pre.sum()
+        s_neg = post.sum()
+        print(pos, s_pos, s_neg)
+        tot = s_pos + s_neg
+        print('#', pos, (s_pos/tot, s_neg/tot))
+        reverse = rng.choice([False, True], p=(s_pos/tot, s_neg/tot))
         if not reverse:
-            max_fragment_length = min(self._max_fragment_length, pos+1)
+            pos = pos-rng.choice(np.arange(pre.size), p=pre/s_pos)
         else:
-            max_fragment_length = min(self._max_fragment_length, self._area_size-pos)
-        p = self.fragment_length_distribution[:max_fragment_length+1]
-        p /= p.sum()
-        fragment_length = rng.choice(np.arange(max_fragment_length+1),
-                                     p=np.array(p))
-        if reverse:
-            pos = pos + fragment_length-1
-        else:
-            pos = pos - fragment_length + 1
-
+            pos = pos+rng.choice(np.arange(post.size), p=post/s_neg)
         strand = '-' if reverse else '+'
         assert pos >= 0 and pos < self._area_size, (reverse, pos, fragment_length)
         return pos, strand
+
+#         
+#         self.fragment_length_distribution[
+# 
+#         reverse = rng.choice([True, False])
+#         if not reverse:
+#             max_fragment_length = min(self._max_fragment_length, pos+1)
+#         else:
+#             max_fragment_length = min(self._max_fragment_length, self._area_size-pos)
+#         p = self.fragment_length_distribution[:max_fragment_length+1]
+#         p /= p.sum()
+#         fragment_length = rng.choice(np.arange(max_fragment_length+1),
+#                                      p=np.array(p))
+#         if reverse:
+#             pos = pos + fragment_length - 1
+#         else:
+#             pos = pos - fragment_length + 1
+# 
 
 
 class MultiNomialReparametrization:
