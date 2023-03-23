@@ -95,6 +95,10 @@ def test_simulate_natural(natural_signal_model: JaxSignalModel):
     assert_sample_logprob_fit(natural_signal_model)
 
 
+def test_simulate_natural_geom(natural_signal_model_geometric_length: JaxSignalModel):
+    assert_sample_logprob_fit(natural_signal_model_geometric_length)
+
+
 def test_estimation(signal_model_big, simulated_data):
     model = signal_model_big.__class__(
         np.full_like(

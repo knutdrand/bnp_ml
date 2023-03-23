@@ -115,7 +115,7 @@ class JaxSignalModel(_JaxSignalModel):
         p = self.fragment_length_distribution[:max_fragment_length+1]
         p /= p.sum()
         fragment_length = rng.choice(np.arange(max_fragment_length+1),
-                                     p=p)
+                                     p=np.array(p))
         if reverse:
             pos = pos + fragment_length-1
         else:
@@ -173,4 +173,3 @@ class NaturalSignalModelGeometricLength(NaturalSignalModel):
     @property
     def parameters(self):
         return (self.eta, self.log_p)
-
