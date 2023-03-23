@@ -9,9 +9,11 @@ expected_data = [9, 8, 11, 8, 10, 7, 6]
 
 
 def assert_sample_logprob_fit(model, n_samples: int = 1000, alpha: float=0.05):
-    domain = model.domain()
+    domain = list(sorted(model.domain()))
     observed = Counter(model.sample(np.random.default_rng(), (n_samples,)))
     observed = [observed[key] for key in domain]
+    print({key: np.exp(model.log_prob(key)) for key in domain})
+    print(model.binding_affinity, model.fragment_length_distribution)
     assert_approx_equal(sum(np.exp(model.log_prob(key)) for key in domain), 1)
     expected = np.array([n_samples*np.exp(model.log_prob(key)) for key in domain])
     assert_approx_equal(sum(observed), np.sum(expected))

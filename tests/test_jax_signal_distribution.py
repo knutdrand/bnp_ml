@@ -10,6 +10,20 @@ import numpy as np
 
 max_fragment_length = 4
 
+length_dist = np.arange(max_fragment_length+1)/10
+
+models = [
+    JaxSignalModel(np.full(3, 1/3), length_dist),
+    JaxSignalModel(np.full(3, 1/3), np.array([0., 0.64102566, 0.25641027, 0.10256409])),
+    JaxSignalModel(np.array([0.33333334, 0.33333333, 0.33333333]), np.array([0., 0.64102566, 0.25641027, 0.10256409])),
+    NaturalSignalModel(MultiNomialReparametrization.to_natural(np.full(3, 1/3)),
+                       np.array([0., 0.64102566, 0.25641027, 0.10256409])),
+    NaturalSignalModel(MultiNomialReparametrization.to_natural(np.full(3, 1/3)),
+                       length_dist),
+    NaturalSignalModelGeometricLength(MultiNomialReparametrization.to_natural(np.full(3, 1/3)),
+                                             np.log(0.4))
+]
+
 
 @pytest.fixture
 def rng():
@@ -18,13 +32,13 @@ def rng():
 
 @pytest.fixture
 def signal_model():
-    return JaxSignalModel(np.full(3, 1/3), np.arange(max_fragment_length+1)/10)
+    return JaxSignalModel(np.full(3, 1/3), length_dist)
 
 
 @pytest.fixture
 def natural_signal_model():
     return NaturalSignalModel(MultiNomialReparametrization.to_natural(np.full(3, 1/3)),
-                              np.arange(max_fragment_length+1)/10)
+                              length_dist)
 
 
 @pytest.fixture
@@ -70,18 +84,16 @@ def test_probability_natural_geo(natural_signal_model_geometric_length: JaxSigna
 def test_probability_big(signal_model_big: JaxSignalModel):
     assert_prob_is_one(signal_model_big)
 
-    # # domain_size = len(signal_model.binding_affinity) + max_fragment_length-1
-    # domain = list(sorted(signal_model.domain()))
-    # print(domain)
-    # sum_prob = sum(signal_model.probability(x) for x in domain)
-    # assert_approx_equal(sum_prob, 1)
-    # pos_probs = [signal_model.probability((i, '+')) for i in range(domain_size)]
-    # pos_prob = sum(pos_probs)
-    # print(np.array(pos_probs))
-    # assert_approx_equal(pos_prob, 0.5)
-    # neg_prob = sum(signal_model.probability((i+max_fragment_length-1, '-')) for i in range(domain_size))
-    # assert_approx_equal(neg_prob, 0.5)
 
+@pytest.mark.parametrize('model', models)
+def test_probs(model):
+    assert_prob_is_one(model)
+
+
+@pytest.mark.parametrize('model', models)
+def test_sim(model):
+    assert_sample_logprob_fit(model)
+        
 
 def test_simulate(signal_model):
     assert_sample_logprob_fit(signal_model)
@@ -96,7 +108,7 @@ def test_simulate_natural(natural_signal_model: JaxSignalModel):
 
 
 def test_simulate_natural_geom(natural_signal_model_geometric_length: JaxSignalModel):
-    assert_sample_logprob_fit(natural_signal_model_geometric_length)
+    assert_sample_logprob_fit(natural_signal_model_geometric_length, n_samples=10000)
 
 
 def test_estimation(signal_model_big, simulated_data):

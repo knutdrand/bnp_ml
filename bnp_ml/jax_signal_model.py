@@ -19,7 +19,9 @@ class _JaxSignalModel:
         self.fragment_length_distribution = fragment_length_distribution
         self._max_fragment_length = len(self.fragment_length_distribution)-1
         self._area_size = len(self.binding_affinity)
-        self._padded_affinity = jnp.pad(self.binding_affinity, (self._max_fragment_length-1, ))
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}({self.binding_affinity}, {self.fragment_length_distribution})'
 
     @property
     def parameters(self):
@@ -33,16 +35,16 @@ class _JaxSignalModel:
     def event_shape(self):
         return (1, )
 
-    def _sample_one(self, rng):
-        pos = rng.choice(np.arange(self._area_size),
-                         p=self.binding_affinity)
-        fragment_length = rng.choice(np.arange(self._max_fragment_length+1),
-                                     p=self.fragment_length_distribution)
-        reverse = rng.choice([True, False])
-        if not reverse:
-            return pos + self._max_fragment_length-fragment_length, '+'
-        if reverse:
-            return pos + self._max_fragment_length-1 + fragment_length-1, '-'
+    # def _sample_one(self, rng):
+    #     pos = rng.choice(np.arange(self._area_size),
+    #                      p=self.binding_affinity)
+    #     fragment_length = rng.choice(np.arange(self._max_fragment_length+1),
+    #                                  p=self.fragment_length_distribution)
+    #     reverse = rng.choice([True, False])
+    #     if not reverse:
+    #         return pos + self._max_fragment_length-fragment_length, '+'
+    #     if reverse:
+    #         return pos + self._max_fragment_length-1 + fragment_length-1, '-'
 
     def _sample_n(self, rng,  n):
         return [self._sample_one(rng)
@@ -99,6 +101,8 @@ class JaxSignalModel(_JaxSignalModel):
                 -1)
         affinity = self.binding_affinity[index]
         length_prob = self.fragment_length_distribution[1:1+len(affinity)]
+        length_prob = length_prob/length_prob.sum()
+        print(affinity, length_prob)
         return xp.sum(0.5*affinity*length_prob/length_prob.sum())
 
     def domain(self):
@@ -155,16 +159,17 @@ class NaturalSignalModel(JaxSignalModel):
 
 class NaturalSignalModelGeometricLength(NaturalSignalModel):
 
-    @staticmethod
-    def _fill_fragment_length_dist(n, log_p):
-        log1p = 1-xp.exp(log_p)
-        dist = xp.exp(np.arange(n-1)*log_p+log1p)
-        return xp.insert(dist, 0, 0)
-
     def __init__(self, eta, log_p):
         self.log_p = log_p
-        super().__init__(eta,
-                         self._fill_fragment_length_dist(eta.size+1, log_p))
+        frag_dist = self._fill_fragment_length_dist(eta.size+1, log_p)
+        super().__init__(eta, frag_dist)
+
+    @staticmethod
+    def _fill_fragment_length_dist(n, log_p):
+        log1p = np.log(1-xp.exp(log_p))
+        dist = xp.exp(np.arange(n)*log_p+log1p)
+        return xp.insert(dist, 0, 0)/dist.sum()
+
 
     @classmethod
     def parameter_names(cls):
