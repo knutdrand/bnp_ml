@@ -126,5 +126,21 @@ class JaxSignalModel(_JaxSignalModel):
         return pos, strand
 
 
+class MultiNomialReparametrization:
+    @staticmethod
+    def to_natural(probabilities):
+        return xp.log(probabilities[..., :-1])-xp.log(probabilities[..., -1])
+
+    @staticmethod
+    def from_natural(etas):
+        expd = np.append(xp.exp(etas), 1)
+        s = xp.sum(expd)
+        return expd/s
+
+
+class NaturalSignalModel(JaxSignalModel):
+    def __init__(self, eta, fragment_length_distribution):
+        pass
+
     # return xp.sum(
     #         self.fragment_length_distribution[1:] * 0.5*self._padded_affinity[index])

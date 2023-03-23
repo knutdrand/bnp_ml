@@ -149,7 +149,6 @@ def estimate_fisher_information(model: Distribution, n: int = 10000000, rng=None
     return hessian
 
 
-
 def linear_fisher_information(model: Distribution, n: int = 10000000):
     h = estimate_fisher_information(model, n)
     return tuple(np.atleast_2d(row[i]).diagonal() for i, row in enumerate(h))

@@ -1,7 +1,7 @@
 import pytest
 import torch
-from numpy.testing import assert_approx_equal
-from bnp_ml.jax_signal_model import JaxSignalModel
+from numpy.testing import assert_approx_equal, assert_allclose
+from bnp_ml.jax_signal_model import JaxSignalModel, MultiNomialReparametrization
 from bnp_ml.jax_wrapper import estimate_fisher_information, estimate_sgd
 from collections import Counter
 from logarray.logarray import log_array
@@ -22,8 +22,13 @@ def signal_model():
 
 
 @pytest.fixture
-def signal_model_big():
-    return JaxSignalModel(np.arange(1, 11)/55, np.arange(max_fragment_length+1)/10)
+def big_probs():
+    return np.arange(1, 11)/55
+
+
+@pytest.fixture
+def signal_model_big(big_probs):
+    return JaxSignalModel(big_probs, np.arange(max_fragment_length+1)/10)
 
 
 @pytest.fixture
@@ -92,3 +97,12 @@ def test_back_forth(signal_model, rng):
 
 def test_fisher_information(signal_model, rng):
     estimate_fisher_information(signal_model, 100, rng)
+
+
+def test_multinomial_reparametrization(big_probs):
+    reparam = MultiNomialReparametrization
+    roundtrip = np.array(reparam.from_natural(reparam.to_natural(big_probs)))
+    print(roundtrip)
+    print(big_probs)
+    assert_allclose(roundtrip, big_probs, rtol=6)
+    
