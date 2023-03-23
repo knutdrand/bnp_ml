@@ -8,7 +8,7 @@ observed_data = [8, 6, 10, 7, 8, 11, 9]
 expected_data = [9, 8, 11, 8, 10, 7, 6]
 
 
-def assert_sample_logprob_fit(model, n_samples: int = 500, alpha: float=0.05):
+def assert_sample_logprob_fit(model, n_samples: int = 1000, alpha: float=0.05):
     domain = model.domain()
     observed = Counter(model.sample(np.random.default_rng(), (n_samples,)))
     observed = [observed[key] for key in domain]

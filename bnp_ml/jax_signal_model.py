@@ -106,7 +106,7 @@ class JaxSignalModel(_JaxSignalModel):
 
     def _sample_one(self, rng):
         pos = rng.choice(np.arange(self._area_size),
-                         p=self.binding_affinity)
+                         p=np.array(self.binding_affinity))
         reverse = rng.choice([True, False])
         if not reverse:
             max_fragment_length = min(self._max_fragment_length, pos+1)
@@ -140,7 +140,37 @@ class MultiNomialReparametrization:
 
 class NaturalSignalModel(JaxSignalModel):
     def __init__(self, eta, fragment_length_distribution):
-        pass
+        self.eta = eta
+        super().__init__(MultiNomialReparametrization.from_natural(eta),
+                         fragment_length_distribution)
 
-    # return xp.sum(
-    #         self.fragment_length_distribution[1:] * 0.5*self._padded_affinity[index])
+    @classmethod
+    def parameter_names(cls):
+        return ['eta', 'fragment_length_distribution']
+
+    @property
+    def parameters(self):
+        return (self.eta, self.fragment_length_distribution)
+
+
+class NaturalSignalModelGeometricLength(NaturalSignalModel):
+
+    @staticmethod
+    def _fill_fragment_length_dist(n, log_p):
+        log1p = 1-xp.exp(log_p)
+        dist = xp.exp(np.arange(n-1)*log_p+log1p)
+        return xp.insert(dist, 0, 0)
+
+    def __init__(self, eta, log_p):
+        self.log_p = log_p
+        super().__init__(eta,
+                         self._fill_fragment_length_dist(eta.size+1, log_p))
+
+    @classmethod
+    def parameter_names(cls):
+        return ['eta', 'log_p']
+
+    @property
+    def parameters(self):
+        return (self.eta, self.log_p)
+

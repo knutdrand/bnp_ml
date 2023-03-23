@@ -1,7 +1,7 @@
 import pytest
 import torch
 from numpy.testing import assert_approx_equal, assert_allclose
-from bnp_ml.jax_signal_model import JaxSignalModel, MultiNomialReparametrization
+from bnp_ml.jax_signal_model import JaxSignalModel, MultiNomialReparametrization, NaturalSignalModel, NaturalSignalModelGeometricLength
 from bnp_ml.jax_wrapper import estimate_fisher_information, estimate_sgd
 from collections import Counter
 from logarray.logarray import log_array
@@ -19,6 +19,18 @@ def rng():
 @pytest.fixture
 def signal_model():
     return JaxSignalModel(np.full(3, 1/3), np.arange(max_fragment_length+1)/10)
+
+
+@pytest.fixture
+def natural_signal_model():
+    return NaturalSignalModel(MultiNomialReparametrization.to_natural(np.full(3, 1/3)),
+                              np.arange(max_fragment_length+1)/10)
+
+
+@pytest.fixture
+def natural_signal_model_geometric_length():
+    return NaturalSignalModelGeometricLength(MultiNomialReparametrization.to_natural(np.full(3, 1/3)),
+                                             np.log(0.4))
 
 
 @pytest.fixture
@@ -47,6 +59,14 @@ def test_probability(signal_model: JaxSignalModel):
     assert_prob_is_one(signal_model)
 
 
+def test_probability_natural(natural_signal_model: JaxSignalModel):
+    assert_prob_is_one(natural_signal_model)
+
+
+def test_probability_natural_geo(natural_signal_model_geometric_length: JaxSignalModel):
+    assert_prob_is_one(natural_signal_model_geometric_length)
+
+
 def test_probability_big(signal_model_big: JaxSignalModel):
     assert_prob_is_one(signal_model_big)
 
@@ -69,6 +89,10 @@ def test_simulate(signal_model):
 
 def test_simulate_big(signal_model_big):
     assert_sample_logprob_fit(signal_model_big)
+
+
+def test_simulate_natural(natural_signal_model: JaxSignalModel):
+    assert_sample_logprob_fit(natural_signal_model)
 
 
 def test_estimation(signal_model_big, simulated_data):
