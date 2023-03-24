@@ -161,7 +161,7 @@ class MultiNomialReparametrization:
 
     @staticmethod
     def from_natural(etas):
-        expd = np.append(xp.exp(etas), 1)
+        expd = xp.append(xp.exp(etas), 1)
         s = xp.sum(expd)
         return expd/s
 
@@ -182,6 +182,7 @@ class NaturalSignalModel(JaxSignalModel):
 
 
 class NaturalSignalModelGeometricLength(NaturalSignalModel):
+    is_natural = True
 
     def __init__(self, eta, log_p):
         self.log_p = log_p
@@ -190,8 +191,8 @@ class NaturalSignalModelGeometricLength(NaturalSignalModel):
 
     @staticmethod
     def _fill_fragment_length_dist(n, log_p):
-        log1p = np.log(1-xp.exp(log_p))
-        dist = xp.exp(np.arange(n)*log_p+log1p)
+        log1p = xp.log(1-xp.exp(log_p))
+        dist = xp.exp(xp.arange(n)*log_p+log1p)
         return xp.insert(dist, 0, 0)/dist.sum()
 
 

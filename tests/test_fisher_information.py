@@ -22,6 +22,7 @@ class NormalDistribution:
     def log_prob(self, data):
         return 1/(self._scale*np.sqrt(2*np.pi))*LogArray(-0.5*(data-self._loc)**2/self._scale**2)
 
+
 @pytest.mark.xfail
 def test_fisher_information(standard_normal):
     I = estimate_fisher_information(standard_normal)

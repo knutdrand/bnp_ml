@@ -3,6 +3,7 @@ from typing import Protocol
 import jax
 import distrax
 from jax import random
+import jax.numpy as xp
 import math
 
 
@@ -13,7 +14,7 @@ def mixture_class(class_1, class_2, seed):
             component_b = class_2(*args[len(class_1.parameter_names()):])
             self._dist = distrax.MixtureOfTwo(prob_a, component_a._dist, component_b._dist)
             self.prob_a = prob_a
-            self.cnomponent_a = component_a
+            self.component_a = component_a
             self.component_b = component_b
             self._seed = seed
 
@@ -149,8 +150,8 @@ def estimate_fisher_information(model: Distribution, n: int = 10000000, rng=None
     return hessian
 
 
-def linear_fisher_information(model: Distribution, n: int = 10000000):
-    h = estimate_fisher_information(model, n)
+def linear_fisher_information(model: Distribution, n: int = 10000000, rng=None):
+    h = estimate_fisher_information(model, n, rng)
     return tuple(np.atleast_2d(row[i]).diagonal() for i, row in enumerate(h))
 
 # return tuple(tuple(-np.mean(h, axis=-1) for h in row)
@@ -177,12 +178,20 @@ def estimate_sgd(distribution, data, learning_rate=0.01, n_iterations=100):
         data = (data, )
 
     def loss_func(params, data):
-        return -np.mean(distribution.__class__(*params).log_prob(*data))
+        return -xp.mean(distribution.__class__(*params).log_prob(*data))
 
-    for _ in range(n_iterations):
+    @jax.jit
+    def update_func(params, opt_state):
         grads = jax.grad(loss_func)(params, data)
         updates, opt_state = optimizer.update(grads, opt_state)
         params = optax.apply_updates(params, updates)
+        return params, opt_state
+        
+    for _ in range(n_iterations):
+        params, opt_state = update_func(params, opt_state)
+        # grads = jax.grad(loss_func)(params, data)
+        # updates, opt_state = optimizer.update(grads, opt_state)
+        # params = optax.apply_updates(params, updates)
     return distribution.__class__(*params)
 
     
@@ -196,3 +205,8 @@ def estimate_sgd(distribution, data, learning_rate=0.01, n_iterations=100):
         grads = grad_func(*distribution.parameters)
         distribution = distribution.__class__(*(param-grad*learning_rate for param, grad in zip(distribution.parameters, grads)))
     return distribution
+
+
+def init_like(model, rng):
+    return model.__class__(
+        *(-1*rng.random(param.shape) for param in model.parameters))

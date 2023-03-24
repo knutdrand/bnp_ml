@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import plotly.express as px
 from collections import defaultdict
+from .jax_wrapper import init_like
+
 
 def param_diffs(dist_1, dist_2):
     # return (dist_2.p-dist_1.p, )
@@ -18,17 +20,21 @@ def plot_table(table):
                       marginal_y='histogram')
 
 
-def fisher_table(dist, estimator, sample_sizes=None, n_fisher=100000):
+def fisher_table(dist, estimator, sample_sizes=None, n_fisher=100000, rng=None):
     if sample_sizes is None:
         sample_sizes = np.arange(1, 5)*10
-    fisher_info = linear_fisher_information(dist, n=n_fisher)
+    fisher_info = linear_fisher_information(dist, n=n_fisher, rng=rng)
     # sds = np.sqrt(1/(sample_sizes*fisher_info))
 
     table = defaultdict(list)
     for sample_size in sample_sizes:
-        estimate = estimator(dist.__class__(*[np.full_like(param, 0.6)
-                                              for param in dist.parameters]),
-                             dist.sample((sample_size, )))
+        if hasattr(dist, 'is_natural') and dist.is_natural:
+            init_dist = init_like(dist, rng)
+        else:
+            init_dist = dist.__class__(*[np.full_like(param, 0.6)
+                                         for param in dist.parameters])
+        s = dist.sample((sample_size, )) if rng is None else dist.sample(rng, (sample_size, ))
+        estimate = estimator(init_dist, s)
 
         for i, errors in enumerate(param_diffs(estimate, dist)):
             for j, error in enumerate(np.atleast_1d(errors)):
