@@ -4,7 +4,7 @@ from typing import Tuple, List, Union
 from bionumpy import bnpdataclass
 from functools import partial
 import jax.numpy as jnp
-
+from jax.scipy.special import logsumexp
 xp = jnp
 
 
@@ -15,7 +15,8 @@ class _JaxSignalModel:
         self.fragment_length_distribution = fragment_length_distribution
         self._max_fragment_length = len(self.fragment_length_distribution)-1
         self._area_size = len(self.binding_affinity)
-        self._tot_probs = xp.array([self.fragment_length_distribution[1:position+2].sum() + self.fragment_length_distribution[1:(self._area_size-position+1)].sum()
+        self._tot_probs = xp.array(
+            [self.fragment_length_distribution[1:position+2].sum() + self.fragment_length_distribution[1:(self._area_size-position+1)].sum()
                                     for position in range(self._area_size)])
 
     def tot_prob(self, position):
@@ -64,6 +65,31 @@ class JaxSignalModel(_JaxSignalModel):
     comes from a givn position, conditioned on the read falling in the desired windo. 
     Thus is should be lower on the edges
     '''
+
+    # def log_prob(self, X: Union[Tuple[int, str], List[Tuple[int, str]]]):
+    @property
+    def log_frag_dist(self):
+        return xp.log(self.fragment_length_distribution)
+
+    @property
+    def tot_log_probs(self):
+        return xp.log(self._tot_probs)
+
+    def log_prob(self, X: Union[Tuple[int, str], List[Tuple[int, str]]]):
+        if isinstance(X, list):
+            return xp.array([self.log_prob(x) for x in X])
+        position, strand = X
+        if strand == '+':
+            index = slice(position, position+self._max_fragment_length)
+        else:
+            index = slice(
+                position,
+                position-self._max_fragment_length if position-self._max_fragment_length >= 0 else None,
+                -1)
+        affinity = xp.log(self.binding_affinity[index])
+        tot_probs = self.tot_log_probs[index]
+        length_prob = self.log_frag_dist[1:1+len(affinity)] - tot_probs
+        return logsumexp(affinity + length_prob)
 
     def probability(self, X: Union[Tuple[int, str], List[Tuple[int, str]]]):
         if isinstance(X, list):
@@ -132,16 +158,34 @@ class NaturalSignalModel(JaxSignalModel):
 class NaturalSignalModelGeometricLength(NaturalSignalModel):
     is_natural = True
 
+    @property
+    def log_frag_dist(self):
+        return self._log_frag_dist
+
+    @property
+    def tot_log_probs(self):
+        return self._tot_log_probs
+
     def __init__(self, eta, log_p):
         self.log_p = log_p
         frag_dist = self._fill_fragment_length_dist(eta.size+1, log_p)
         super().__init__(eta, frag_dist)
+        self._log_frag_dist = self._fill_fragment_length_logdist(eta.size+1, log_p)
+        self._tot_log_probs = xp.array([xp.logaddexp(logsumexp(self.log_frag_dist[1:position+2]),
+                                                     logsumexp(self.log_frag_dist[1:(self._area_size-position+1)]))
+                                        for position in range(self._area_size)])
 
     @staticmethod
     def _fill_fragment_length_dist(n, log_p):
         log1p = xp.log(1-xp.exp(log_p))
         dist = xp.exp(xp.arange(n)*log_p+log1p)
         return xp.insert(dist, 0, 0)/dist.sum()
+
+    @staticmethod
+    def _fill_fragment_length_logdist(n, log_p):
+        log1p = xp.log(1-xp.exp(log_p))
+        log_dist = xp.arange(n)*log_p+log1p
+        return xp.insert(log_dist, 0, 0)-logsumexp(log_dist)
 
 
     @classmethod

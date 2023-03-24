@@ -34,13 +34,14 @@ def fisher_table(dist, estimator, sample_sizes=None, n_fisher=100000, rng=None):
         s = dist.sample((sample_size, )) if rng is None else dist.sample(rng, (sample_size, ))
         estimate = estimator(init_dist, s)
         logger.info(estimate.parameters)
-        for i, errors in enumerate(param_diffs(estimate, dist)):
-            for j, error in enumerate(np.atleast_1d(errors)):
+        for i, (errors, params) in enumerate(zip(param_diffs(estimate, dist), estimate.parameters)):
+            for j, (error, param) in enumerate(zip(np.atleast_1d(errors), np.atleast_1d(params))):
                 sd = 1/np.sqrt(sample_size*fisher_info[i][j])
                 table['sample_size'].append(sample_size)
                 table['param_name'].append(dist.parameter_names()[i])
                 table['param_idx'].append(str(j))
                 table['z_score'].append(error/sd)
+                table['param'].append(param)
     return table
     return {name: np.array(l) for name, l in table.items()}
     estimates = [estimator(dist.__class__(*[0.6 for param in dist.parameters]),

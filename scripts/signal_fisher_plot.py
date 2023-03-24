@@ -10,7 +10,7 @@ from bnp_ml.model import curry
 
 logging.basicConfig(level=logging.INFO)
 area_size = 21
-my_sgd = partial(estimate_sgd, n_iterations=100000)
+my_sgd = partial(estimate_sgd, n_iterations=10000)
 weights = np.ones(area_size)
 weights[area_size//2] = 10
 ps = weights/weights.sum()

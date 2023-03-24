@@ -63,7 +63,7 @@ def test_simulate_natural(natural_signal_model: JaxSignalModel):
 
 
 def test_simulate_natural_geom(natural_signal_model_geometric_length: JaxSignalModel):
-    assert_sample_logprob_fit(natural_signal_model_geometric_length, n_samples=10000)
+    assert_sample_logprob_fit(natural_signal_model_geometric_length, n_samples=100000)
 
 
 @pytest.mark.parametrize('model', models)
@@ -83,14 +83,6 @@ def test_estimation(signal_model_big, simulated_data):
             1/len(signal_model_big.fragment_length_distribution)))
 
     estimate_sgd(model, simulated_data, n_iterations=5)
-
-
-    # rng = np.random.default_rng()
-    # counter = Counter(signal_model.sample(rng, (10000,)))
-    # s = sum(counter.values())
-    # for key in sorted(counter.keys()):
-    #     print(key, counter[key]/s, signal_model.probability(key))
-    # assert False
 
 
 def test_back_forth(signal_model, rng):
