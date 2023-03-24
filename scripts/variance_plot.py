@@ -48,7 +48,7 @@ mixed_normal = cls(0.5, 0.0, 1.0, 2.0, 3.0)
 #                                         np.array([2.0, 3.0])), estimate_normal, sample_sizes=np.arange(1, 200))
 t = fisher_table(MultiVariateNormalDiag(np.arange(1, 10)*0.2,
                                         np.arange(1, 10)*1.2),
-                 estimate_normal, sample_sizes=np.arange(1, 200))
+                 estimate_normal, sample_sizes=np.arange(10, 20))
 # t = fisher_table(mixed_normal, estimate_mixed_normal, sample_sizes=np.arange(1, 100))
 
 # t = fisher_table(Bernoulli(0.4), estimate_p, sample_sizes=np.arange(1, 200))

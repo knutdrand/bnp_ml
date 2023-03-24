@@ -1,11 +1,11 @@
 from bnp_ml.bernoulli import Bernoulli
+import logging
 from bnp_ml.jax_wrapper import estimate_fisher_information, estimate_sgd, linear_fisher_information, estimate_gd
 import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
 import plotly.express as px
 from collections import defaultdict
 from .jax_wrapper import init_like
+logger = logging.getLogger(__name__)
 
 
 def param_diffs(dist_1, dist_2):
@@ -24,8 +24,6 @@ def fisher_table(dist, estimator, sample_sizes=None, n_fisher=100000, rng=None):
     if sample_sizes is None:
         sample_sizes = np.arange(1, 5)*10
     fisher_info = linear_fisher_information(dist, n=n_fisher, rng=rng)
-    # sds = np.sqrt(1/(sample_sizes*fisher_info))
-
     table = defaultdict(list)
     for sample_size in sample_sizes:
         if hasattr(dist, 'is_natural') and dist.is_natural:
@@ -35,7 +33,7 @@ def fisher_table(dist, estimator, sample_sizes=None, n_fisher=100000, rng=None):
                                          for param in dist.parameters])
         s = dist.sample((sample_size, )) if rng is None else dist.sample(rng, (sample_size, ))
         estimate = estimator(init_dist, s)
-
+        logger.info(estimate.parameters)
         for i, errors in enumerate(param_diffs(estimate, dist)):
             for j, error in enumerate(np.atleast_1d(errors)):
                 sd = 1/np.sqrt(sample_size*fisher_info[i][j])
@@ -48,7 +46,8 @@ def fisher_table(dist, estimator, sample_sizes=None, n_fisher=100000, rng=None):
     estimates = [estimator(dist.__class__(*[0.6 for param in dist.parameters]),
                            dist.sample((sample_size, )))
                  for sample_size in sample_sizes]
-    errors = [param_diffs(estimate, dist) for estimate in estimates]
+
+    errors = [param_diffs(dist, estimate) for estimate in estimates]
 
     return {'sample_size': sample_sizes,
             'z_score': np.array(errors).ravel()/np.sqrt(1/(sample_sizes*fisher_info[0][0]))}

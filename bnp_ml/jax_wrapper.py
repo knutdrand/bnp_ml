@@ -5,7 +5,9 @@ import distrax
 from jax import random
 import jax.numpy as xp
 import math
-
+import optax
+import logging
+logger = logging.getLogger(__name__)
 
 def mixture_class(class_1, class_2, seed):
     class MixtureOfTwo:
@@ -170,7 +172,7 @@ def estimate_gd(distribution, data, learning_rate=0.01, n_iterations=100):
 
 
 def estimate_sgd(distribution, data, learning_rate=0.01, n_iterations=100):
-    import optax
+    logger.info(f'Running sgd on {distribution.__class__.__name__} with  {n_iterations} iterations')
     optimizer = optax.sgd(learning_rate)
     params = distribution.parameters
     opt_state = optimizer.init(params)

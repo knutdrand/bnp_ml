@@ -2,6 +2,7 @@ import numpy as np
 import math
 from typing import Tuple, List, Union
 from bionumpy import bnpdataclass
+from functools import partial
 import jax.numpy as jnp
 
 xp = jnp
@@ -13,7 +14,9 @@ xp = jnp
 #     strand: str
 
 
+
 class _JaxSignalModel:
+
     def __init__(self, binding_affinity, fragment_length_distribution):
         self.binding_affinity = binding_affinity
         self.fragment_length_distribution = fragment_length_distribution
@@ -123,9 +126,7 @@ class JaxSignalModel(_JaxSignalModel):
         post = self.fragment_length_distribution[1:(self._area_size-pos+1)]
         s_pos = pre.sum()
         s_neg = post.sum()
-        print(pos, s_pos, s_neg)
         tot = s_pos + s_neg
-        print('#', pos, (s_pos/tot, s_neg/tot))
         reverse = rng.choice([False, True], p=np.array((s_pos/tot, s_neg/tot)))
         if not reverse:
             pos = pos-rng.choice(np.arange(pre.size), p=np.array(pre/s_pos))
