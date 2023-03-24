@@ -8,13 +8,6 @@ import jax.numpy as jnp
 xp = jnp
 
 
-# @bnpdataclass.bnpdataclass
-# class ReadStart:
-#     position: int
-#     strand: str
-
-
-
 class _JaxSignalModel:
 
     def __init__(self, binding_affinity, fragment_length_distribution):
@@ -44,17 +37,6 @@ class _JaxSignalModel:
     def event_shape(self):
         return (1, )
 
-    # def _sample_one(self, rng):
-    #     pos = rng.choice(np.arange(self._area_size),
-    #                      p=self.binding_affinity)
-    #     fragment_length = rng.choice(np.arange(self._max_fragment_length+1),
-    #                                  p=self.fragment_length_distribution)
-    #     reverse = rng.choice([True, False])
-    #     if not reverse:
-    #         return pos + self._max_fragment_length-fragment_length, '+'
-    #     if reverse:
-    #         return pos + self._max_fragment_length-1 + fragment_length-1, '-'
-
     def _sample_n(self, rng,  n):
         return [self._sample_one(rng)
                 for _ in range(n)]
@@ -65,20 +47,6 @@ class _JaxSignalModel:
 
     def log_prob(self, X: Union[Tuple[int, str], List[Tuple[int, str]]]):
         return xp.log(self.probability(X))
-
-    # def probability(self, X: Union[Tuple[int, str], List[Tuple[int, str]]]):
-    #     if isinstance(X, list):
-    #         return xp.array([self.probability(x) for x in X])
-    #     position, strand = X
-    #     if strand == '+':
-    #         index = slice(position, position+self._max_fragment_length)
-    #     else:
-    #         index = slice(
-    #             position,
-    #             position-self._max_fragment_length if position-self._max_fragment_length >= 0 else None,
-    #             -1)
-    #     return xp.sum(
-    #         self.fragment_length_distribution[1:] * 0.5*self._padded_affinity[index])
 
     def domain(self):
         pos = {(self._max_fragment_length + binding_pos-fragment_length, '+')
@@ -97,8 +65,6 @@ class JaxSignalModel(_JaxSignalModel):
     Thus is should be lower on the edges
     '''
 
-        
-
     def probability(self, X: Union[Tuple[int, str], List[Tuple[int, str]]]):
         if isinstance(X, list):
             return xp.array([self.probability(x) for x in X])
@@ -113,7 +79,6 @@ class JaxSignalModel(_JaxSignalModel):
         affinity = self.binding_affinity[index]
         tot_probs = self._tot_probs[index]
         length_prob = self.fragment_length_distribution[1:1+len(affinity)]/tot_probs
-        # length_prob = length_prob/length_prob.sum()
         return xp.sum(affinity*length_prob)
 
     def domain(self):
@@ -135,24 +100,6 @@ class JaxSignalModel(_JaxSignalModel):
         strand = '-' if reverse else '+'
         assert pos >= 0 and pos < self._area_size, (reverse, pos, fragment_length)
         return pos, strand
-
-#         
-#         self.fragment_length_distribution[
-# 
-#         reverse = rng.choice([True, False])
-#         if not reverse:
-#             max_fragment_length = min(self._max_fragment_length, pos+1)
-#         else:
-#             max_fragment_length = min(self._max_fragment_length, self._area_size-pos)
-#         p = self.fragment_length_distribution[:max_fragment_length+1]
-#         p /= p.sum()
-#         fragment_length = rng.choice(np.arange(max_fragment_length+1),
-#                                      p=np.array(p))
-#         if reverse:
-#             pos = pos + fragment_length - 1
-#         else:
-#             pos = pos - fragment_length + 1
-# 
 
 
 class MultiNomialReparametrization:
