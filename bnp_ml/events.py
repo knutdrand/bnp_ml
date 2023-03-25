@@ -1,4 +1,6 @@
 from typing import Dict, Any
+from math import prod
+import operator
 
 
 class Probability:
@@ -7,6 +9,18 @@ class Probability:
         
     def equals(self, other):
         return self._p == other
+
+    @classmethod
+    def apply_func(cls, op, elements):
+        if op == operator.or_:
+            return Probability(sum(element._p for element in elements))
+        if op == operator.and_:
+            return Probability(prod(element._p for element in elements))
+        if op == operator.not_:
+            assert len(elements) == 1
+            return Probability(1-elements[0]._p)
+
+        assert False
 
 
 class RandomVariable:
@@ -21,12 +35,32 @@ class RandomVariable:
 
 
 class Event:
-    def __init__(self, random_variable, value):
+    def __init__(self, random_variable: RandomVariable, value):
+        assert isinstance(random_variable , RandomVariable), random_variable
         self._random_variable = random_variable
         self._value = value
 
     def probability(self):
         return self._random_variable.probability(self._value)
+
+    def __or__(self, other):
+        return MultiEvent([self, other], operator.or_)
+
+    def __and__(self, other):
+        return MultiEvent([self, other], operator.and_)
+
+    def __invert__(self):
+        return MultiEvent([self], operator.not_)
+
+
+class MultiEvent(Event):
+    def __init__(self, events, op):
+        assert (isinstance(event, Event) for event in events)
+        self._events = events
+        self._op = op
+
+    def probability(self):
+        return Probability.apply_func(self._op, [event.probability() for event in self._events])
 
 
 def P(event):
