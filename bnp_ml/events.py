@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Protocol
 from math import prod
 import operator
 
@@ -6,7 +6,7 @@ import operator
 class Probability:
     def __init__(self, p):
         self._p = p
-        
+
     def equals(self, other):
         return self._p == other
 
@@ -23,7 +23,27 @@ class Probability:
         assert False
 
 
-class RandomVariable:
+class RandomVariable(Protocol):
+    #TODO generic value
+    def __eq__(self, value) -> 'Event':
+        return NotImplemented
+
+    def probability(self, value) -> Probability:
+        return NotImplemented
+
+
+class Bernoulli:
+    def __init__(self, p: Probability):
+        self._p = p
+
+    def __eq__(self, value):
+        return Event(self, value)
+
+    def probability(self, value) -> Probability:
+        return self._p**value*(1-self._p)**(1-value)
+
+
+class DictRandomVariable:
     def __init__(self, outcome_dict: Dict[Dict, Probability]):
         self._outcome_dict = outcome_dict
 

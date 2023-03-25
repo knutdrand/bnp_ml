@@ -1,15 +1,15 @@
-from bnp_ml.events import RandomVariable, Event, Probability, P
+from bnp_ml.events import DictRandomVariable, Event, Probability, P
 import pytest
 
 
 @pytest.fixture
 def dice():
-    return RandomVariable({i: Probability(1/6) for i in range(1, 7)})
+    return DictRandomVariable({i: Probability(1/6) for i in range(1, 7)})
 
 
 @pytest.fixture
 def coin():
-    return RandomVariable({i: Probability(1/2) for i in ('H', 'T')})
+    return DictRandomVariable({i: Probability(1/2) for i in ('H', 'T')})
 
 
 @pytest.fixture
