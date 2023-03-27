@@ -1,6 +1,12 @@
-from bnp_ml.events import DictRandomVariable, Event, Probability, P, Bernoulli, Beta
-import pytest
+import numpy as np
+from bnp_ml.events import (DictRandomVariable, Event, Probability,
+                           P, Bernoulli, Beta, scipy_stats_wrapper,
+                           Normal, Categorical)
 
+from bnp_ml.pyprob.regression import linear_regression_model
+import scipy.stats
+import pytest
+from numpy.testing import assert_allclose
 
 @pytest.fixture
 def dice():
@@ -13,8 +19,27 @@ def bernoulli():
 
 
 @pytest.fixture
+def normals():
+    return Normal([0, 1, 2.], [1.0])
+
+@pytest.fixture
+def normal():
+    return Normal([1], [1.0])
+
+
+@pytest.fixture
 def beta():
     return Beta(1.0, 1.0)
+
+
+@pytest.fixture
+def ps():
+    return np.array([0.1, 0.5, 0.4])
+
+
+@pytest.fixture
+def categorical(ps):
+    return Categorical(probs=ps)
 
 
 @pytest.fixture
@@ -58,4 +83,21 @@ def test_bernoulli(bernoulli):
 
 
 def test_beta(beta):
-    assert P(beta == 0.5).equals(2.0)
+    assert P(beta == 0.5).equals(1.0)
+
+
+def test_beta_wrapper():
+    beta = scipy_stats_wrapper(scipy.stats.beta)(1.0, 1.0)
+    assert P(beta == 0.5).equals(1.0)
+
+
+def test_index_model(normals, normal):
+    assert P(normals[1] == 2.).prob() == P(normal == 2.).prob()
+
+
+def test_mixture_model(normals, categorical, ps):
+    Z = categorical
+    X = normals[Z]
+    prob = P(X == 2.).prob()
+    true = sum(p1*p2 for p1, p2 in zip(ps, P(normals == 2.).prob()))
+    assert_allclose(prob, true)
