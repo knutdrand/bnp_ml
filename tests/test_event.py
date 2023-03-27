@@ -1,10 +1,20 @@
-from bnp_ml.events import DictRandomVariable, Event, Probability, P
+from bnp_ml.events import DictRandomVariable, Event, Probability, P, Bernoulli, Beta
 import pytest
 
 
 @pytest.fixture
 def dice():
     return DictRandomVariable({i: Probability(1/6) for i in range(1, 7)})
+
+
+@pytest.fixture
+def bernoulli():
+    return Bernoulli(0.3)
+
+
+@pytest.fixture
+def beta():
+    return Beta(1.0, 1.0)
 
 
 @pytest.fixture
@@ -41,3 +51,11 @@ def test_event_and(dice_2, coin_heads):
 
 def test_event_not(dice_2):
     assert P(~dice_2).equals(5/6)
+
+
+def test_bernoulli(bernoulli):
+    assert P(bernoulli == True).equals(0.3)
+
+
+def test_beta(beta):
+    assert P(beta == 0.5).equals(2.0)

@@ -1,4 +1,6 @@
+from abc import ABC, abstractmethod
 from typing import Dict, Any, Protocol
+import scipy.stats
 from math import prod
 import operator
 
@@ -23,32 +25,42 @@ class Probability:
         assert False
 
 
-class RandomVariable(Protocol):
+class RandomVariable(ABC):
     #TODO generic value
     def __eq__(self, value) -> 'Event':
-        return NotImplemented
+        return Event(self, value)
 
+    @abstractmethod
     def probability(self, value) -> Probability:
         return NotImplemented
 
 
-class Bernoulli:
+class ParameterizedDistribution(RandomVariable):
+    def probability(self, value):
+        pass
+
+    def __eq__(self, value):
+        return Event(self, value)
+
+
+class Beta(ParameterizedDistribution):
+    def __init__(self, a, b):
+        self._a = a
+        self._b = b
+        self._dist = scipy.stats.beta(a, b)
+
+
+class Bernoulli(ParameterizedDistribution):
     def __init__(self, p: Probability):
         self._p = p
 
-    def __eq__(self, value):
-        return Event(self, value)
-
     def probability(self, value) -> Probability:
-        return self._p**value*(1-self._p)**(1-value)
+        return Probability(self._p**value*(1-self._p)**(1-value))
 
 
-class DictRandomVariable:
+class DictRandomVariable(RandomVariable):
     def __init__(self, outcome_dict: Dict[Dict, Probability]):
-        self._outcome_dict = outcome_dict
-
-    def __eq__(self, value):
-        return Event(self, value)
+        self._outcome_dicet = outcome_dict
 
     def probability(self, value):
         return self._outcome_dict[value]
