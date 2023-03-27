@@ -88,6 +88,10 @@ class RandomVariable(ABC):
     def probability(self, value) -> Probability:
         return NotImplemented
 
+    @abstractmethod
+    def sample(self, rng, shape=()) -> np.ndarray:
+        return NotImplemented
+
 
 class ConvolutionVariable(RandomVariable):
     # TODO: Maybe overwrite == with np.any
@@ -98,9 +102,10 @@ class ConvolutionVariable(RandomVariable):
     def probability(self, value):
         probs_b = self._variable_b.probability(value)
         probs_a = self._variable_a.probability(np.arange(probs_b.shape[0]))
-        print(probs_a)
-        print(probs_b)
         return (probs_a*probs_b).sum()
+
+    def sample(self, rng, shape=()):
+        return self._variable_b[self._variable_a.sample(rng, shape)].sample(rng)
 
 
 class IndexedVariable(RandomVariable):
@@ -109,7 +114,15 @@ class IndexedVariable(RandomVariable):
         self._idx = idx
 
     def probability(self, value):
-        return self._random_variable.probability(value)[self._idx]
+        return self._random_variable.probability(value)[..., self._idx]
+
+    def sample(self, rng, shape=()):
+        s = self._random_variable.sample(rng, shape)
+        print(s.shape)
+        return s[..., self._idx]
+        
+
+#[self._idx, ...] # (value)[self._idx]
 
 
 class ParameterizedDistribution(RandomVariable):
@@ -124,19 +137,29 @@ class Beta(ParameterizedDistribution):
     def __init__(self, a, b):
         self._a = a
         self._b = b
+        self.event_shape = np.broadcast_shapes(a.shape, b.shape)
         self._dist = scipy.stats.beta(a, b)
 
     def probability(self, value):
         return Probability(log_p=self._dist.logpdf(value))
 
+    def sample(self, rng, shape=()):
+        return self._dist.rvs(size=shape, random_state=rng)
+
 
 def scipy_stats_wrapper(dist):
     class Wrapper(ParameterizedDistribution):
         def __init__(self, *args, **kwargs):
+            self.event_shape = np.broadcast_shapes(*tuple(np.asanyarray(a).shape for a in args + tuple(kwargs.values())))
             self._dist = dist(*args, **kwargs)
 
         def probability(self, value) -> Probability:
             return Probability(log_p=self._dist.logpdf(value))
+
+        def sample(self, rng, shape=()):
+            print(shape, self.event_shape)
+            shape = shape + self.event_shape
+            return self._dist.rvs(size=shape, random_state=rng)
 
     return Wrapper
 
@@ -148,6 +171,10 @@ def jax_wrapper(dist):
 
         def probability(self, value) -> Probability:
             return Probability(log_p=self._dist.log_prob(value))
+
+        def sample(self, rng, shape=()):
+            # print(shape, self.event_shape)
+            return self._dist.sample(seed=rng, sample_shape=shape)
 
     return Wrapper
 
@@ -170,6 +197,9 @@ class DictRandomVariable(RandomVariable):
 
     def probability(self, value):
         return self._outcome_dict[value]
+
+    def sample(self, rng, shape=()):
+        return NotImplemented
 
 
 class Event:
