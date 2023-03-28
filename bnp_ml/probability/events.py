@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Protocol
+from typing import Dict
 import scipy.stats
 import distrax
 import numpy as np
@@ -140,7 +140,8 @@ class Beta(ParameterizedDistribution):
     def __init__(self, a, b):
         self._a = a
         self._b = b
-        self.event_shape = np.broadcast_shapes(a.shape, b.shape)
+        self.event_shape = np.broadcast_shapes(np.asanyarray(a).shape, 
+                                               np.asanyarray(b).shape)
         self._dist = scipy.stats.beta(a, b)
 
     def probability(self, value):
@@ -193,6 +194,9 @@ class Bernoulli(ParameterizedDistribution):
 
     def probability(self, value) -> Probability:
         return Probability(self._p**value*(1-self._p)**(1-value))
+
+    def sample(self, rng, shape) -> Probability:
+        return rng.choice([0, 1], size=shape, p=[1-self._p, self._p])
 
 
 class DictRandomVariable(RandomVariable):

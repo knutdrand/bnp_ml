@@ -1,8 +1,7 @@
 import numpy as np
-from bnp_ml.events import (DictRandomVariable, Event, Probability,
-                           P, Bernoulli, Beta, scipy_stats_wrapper,
-                           Normal, Categorical)
-
+from bnp_ml.probability.events import (DictRandomVariable, Event, Probability,
+                                       P, Bernoulli, Beta, scipy_stats_wrapper,
+                                       Normal, Categorical)
 from bnp_ml.pyprob.regression import linear_regression_model
 import scipy.stats
 import pytest
@@ -110,8 +109,8 @@ def test_index_model(normals, normal):
     assert P(normals[1] == 2.).prob() == P(normal == 2.).prob()
 
 
-def test_index_model_sample(normals, rng):
-    assert normals[1].sample(rng, (4, 5)).shape == (4, 5)
+def test_index_model_sample(normals):
+    assert normals[1].sample(10, (4, 5)).shape == (4, 5)
     # assert P(normals[1] == 2.).prob() == P(normal == 2.).prob()
 
 
