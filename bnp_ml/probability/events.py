@@ -7,7 +7,7 @@ from math import prod
 import jax.numpy as jnp
 from scipy.special import logsumexp
 import operator
-
+from numbers import Number
 xp = jnp
 
 
@@ -77,7 +77,6 @@ class Probability:
 
 
 class RandomVariable(ABC):
-    #TODO generic value
     def __eq__(self, value) -> 'Event':
         return Event(self, value)
 
@@ -87,6 +86,10 @@ class RandomVariable(ABC):
 
         return IndexedVariable(self, idx)
 
+    def __add__(self, other):
+        if isinstance(other, Number):
+            return TransformedVariable(self, lambda x: x+other, lambda z: z-other)
+
     @abstractmethod
     def probability(self, value) -> Probability:
         return NotImplemented
@@ -94,6 +97,19 @@ class RandomVariable(ABC):
     @abstractmethod
     def sample(self, rng, shape=()) -> np.ndarray:
         return NotImplemented
+
+
+class TransformedVariable(RandomVariable):
+    def __init__(self, variable, f, inv_f):
+        self._variable = variable
+        self._f = f
+        self._inv_f = inv_f
+
+    def probability(self, value):
+        return self._variable.probability(self._inv_f(value))
+
+    def sample(self, *args, **kwargs):
+        return self._f(self._variable.sample(*args, **kwargs))
 
 
 class ConvolutionVariable(RandomVariable):
@@ -123,9 +139,6 @@ class IndexedVariable(RandomVariable):
         s = self._random_variable.sample(rng, shape)
         print(s.shape)
         return s[..., self._idx]
-        
-
-#[self._idx, ...] # (value)[self._idx]
 
 
 class ParameterizedDistribution(RandomVariable):

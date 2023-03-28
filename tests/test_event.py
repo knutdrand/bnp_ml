@@ -27,6 +27,7 @@ def bernoulli():
 def normals():
     return Normal([0, 1, 2.], [1.0])
 
+
 @pytest.fixture
 def normal():
     return Normal([1], [1.0])
@@ -126,3 +127,11 @@ def test_mixture_model_sample(normals, categorical):
     Z = categorical
     X = normals[Z]
     assert X.sample(10, (4, 5)).shape == (4, 5)
+
+
+def test_add_scalar(normal):
+    X = normal
+    Z = X+2
+    print(X, Z)
+    print(X==2.0, Z==4.0)
+    assert P(X == 2.0).prob() == P(Z == 4.0).prob()
