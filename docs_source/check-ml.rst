@@ -18,8 +18,9 @@ Lets check this for a normal distribution first, with actual ML estimates, bad g
     def estimate_normal(dist, X):
         assert not np.all(X == X.ravel()[0])
         mu = np.sum(X, axis=0)/len(X)
-    sigma = np.sqrt(np.sum((X-mu)**2, axis=0)/len(X))
+	sigma = np.sqrt(np.sum((X-mu)**2, axis=0)/len(X))
         return dist.__class__(mu, sigma)
+
     t = fisher_table(Normal(0.0, 1.0), estimate_normal, sample_sizes=np.arange(2, 100))
     ml_fig = plot_table(t)
     sgd_estimator = partial(estimate_sgd, n_iterations=10)

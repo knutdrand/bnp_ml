@@ -12,6 +12,14 @@ bnp\_ml.bernoulli module
    :undoc-members:
    :show-inheritance:
 
+bnp\_ml.binding\_prediction module
+----------------------------------
+
+.. automodule:: bnp_ml.binding_prediction
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 bnp\_ml.bnp\_ml module
 ----------------------
 
@@ -40,6 +48,22 @@ bnp\_ml.estimators module
 -------------------------
 
 .. automodule:: bnp_ml.estimators
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+bnp\_ml.event\_wrapper module
+-----------------------------
+
+.. automodule:: bnp_ml.event_wrapper
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+bnp\_ml.events module
+---------------------
+
+.. automodule:: bnp_ml.events
    :members:
    :undoc-members:
    :show-inheritance:
@@ -80,6 +104,14 @@ bnp\_ml.ml\_check module
 ------------------------
 
 .. automodule:: bnp_ml.ml_check
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+bnp\_ml.model module
+--------------------
+
+.. automodule:: bnp_ml.model
    :members:
    :undoc-members:
    :show-inheritance:

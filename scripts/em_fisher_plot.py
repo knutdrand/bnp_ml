@@ -1,13 +1,11 @@
 import logging
 from functools import partial
 import numpy as np
-from numpy.random import default_rng
 from bnp_ml.events import Normal, Categorical, P
-from bnp_ml.jax_signal_model import (NaturalSignalModelGeometricLength,
-                                     MultiNomialReparametrization)
+from bnp_ml.jax_signal_model import MultiNomialReparametrization
 from bnp_ml.fisher_plot import fisher_table, plot_table
 from bnp_ml.jax_wrapper import estimate_sgd
-from bnp_ml.model import curry
+
 
 logging.basicConfig(level=logging.INFO)
 

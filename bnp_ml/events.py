@@ -4,8 +4,11 @@ import scipy.stats
 import distrax
 import numpy as np
 from math import prod
+import jax.numpy as jnp
 from scipy.special import logsumexp
 import operator
+
+xp = jnp
 
 
 class Probability:
@@ -18,11 +21,11 @@ class Probability:
         if self._p is not None:
             return self._p
         if self._log_p is not None:
-            return np.exp(self._log_p)
+            return xp.exp(self._log_p)
 
     def log_prob(self):
         if self._p is not None:
-            return np.log(self._p)
+            return xp.log(self._p)
         if self._log_p is not None:
             return self._log_p
 
@@ -34,8 +37,8 @@ class Probability:
 
     def equals(self, p):
         t = self._p == p
-        t |= self._log_p == np.log(p)
-        t |= self._log_odds == np.log(p)-np.log(1-p)
+        t |= self._log_p == xp.log(p)
+        t |= self._log_odds == xp.log(p)-xp.log(1-p)
         return t
 
     def __mul__(self, other):
@@ -58,7 +61,7 @@ class Probability:
             return self._log_p.shape
 
     def __repr__(self):
-        return f'Probability(p={self._p if self._p is not None else np.exp(self._log_p)}, log_p={self._log_p})'
+        return f'Probability(p={self._p if self._p is not None else xp.exp(self._log_p)}, log_p={self._log_p})'
 
     @classmethod
     def apply_func(cls, op, elements):
@@ -101,7 +104,7 @@ class ConvolutionVariable(RandomVariable):
 
     def probability(self, value):
         probs_b = self._variable_b.probability(value)
-        probs_a = self._variable_a.probability(np.arange(probs_b.shape[0]))
+        probs_a = self._variable_a.probability(xp.arange(probs_b.shape[0]))
         return (probs_a*probs_b).sum()
 
     def sample(self, rng, shape=()):
@@ -180,7 +183,8 @@ def jax_wrapper(dist):
 
 
 Categorical = jax_wrapper(distrax.Categorical)
-Normal = scipy_stats_wrapper(scipy.stats.norm)
+Normal = jax_wrapper(distrax.Normal)
+# Normal = scipy_stats_wrapper(scipy.stats.norm)
 
 
 class Bernoulli(ParameterizedDistribution):

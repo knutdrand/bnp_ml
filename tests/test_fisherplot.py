@@ -66,5 +66,5 @@ def test_fisher_multivariatenormal(multivariate_normal):
 
 
 def test_fisher_mixed(mixed_normal):
-    table = fisher_table(mixed_normal, estimate_mixed_normal, sample_sizes=np.arange(1, 5))    
+    table = fisher_table(mixed_normal, estimate_mixed_normal, sample_sizes=np.arange(1, 5))
 
