@@ -47,11 +47,17 @@ class Probability:
         if self._log_p is not None:
             return self.__class__(log_p=self._log_p+other._log_p)
 
-    def sum(self):
+    def __sub__(self, other):
         if self._p is not None:
-            return self.__class__(p=self._p.sum())
+            return self.__class__(p=self._p-other._p)
         if self._log_p is not None:
-            return self.__class__(log_p=logsumexp(self._log_p))
+            return self.__class__(log_p=logsumexp([self._log_p, other._log_p], b=[1, -1]))
+
+    def sum(self, axis=None, **kwargs):
+        if self._p is not None:
+            return self.__class__(p=self._p.sum(axis=axis))
+        if self._log_p is not None:
+            return self.__class__(log_p=logsumexp(self._log_p, axis=axis))
 
     @property
     def shape(self):
@@ -79,6 +85,9 @@ class Probability:
 class RandomVariable(ABC):
     def __eq__(self, value) -> 'Event':
         return Event(self, value)
+
+    def __lt__(self, value):
+        
 
     def __getitem__(self, idx):
         if isinstance(idx, RandomVariable):
@@ -181,7 +190,22 @@ def scipy_stats_wrapper(dist):
     return Wrapper
 
 
-def jax_wrapper(dist):
+class SumVariable(RandomVariable):
+    def __init__(self, a, b, a_domain):
+        self._a = a
+        self._b = b
+        self._a_domain = a_domain
+
+    def probability(self, value):
+        if self._a_domain is None:
+            return NotImplemented
+        return np.sum(self._a.probability(self._a_domain)*self._b.probability(value-self._a_domain), axis=0)
+
+    def sample(self, *args, **kwargs):
+        return self._a.sample(*args, **kwargs) + self._b.sample(*args, **kwargs)
+
+
+def jax_wrapper(dist, domain_func=None):
     class Wrapper(ParameterizedDistribution):
         def __init__(self, *args, **kwargs):
             self._dist = dist(*args, **kwargs)
@@ -193,11 +217,25 @@ def jax_wrapper(dist):
             # print(shape, self.event_shape)
             return self._dist.sample(seed=rng, sample_shape=shape)
 
+        def __add__(self, other):
+            if isinstance(other, Number):
+                return super().__add__(other)
+            domain = None
+            if domain_func is not None:
+                domain = domain_func(self._dist)
+            else:
+                return NotImplemented
+            return SumVariable(self, other, domain)
+
+        __radd__ = __add__
+
     return Wrapper
 
 
-Categorical = jax_wrapper(distrax.Categorical)
+Categorical = jax_wrapper(distrax.Categorical, lambda d: xp.arange(d.num_categories))
 Normal = jax_wrapper(distrax.Normal)
+Geometric = scipy_stats_wrapper(scipy.stats.geom)
+
 # Normal = scipy_stats_wrapper(scipy.stats.norm)
 
 
@@ -242,6 +280,9 @@ class Event:
         return MultiEvent([self], operator.not_)
 
 
+class LTEvent(Event):
+    pass
+
 class MultiEvent(Event):
     def __init__(self, events, op):
         assert (isinstance(event, Event) for event in events)
@@ -252,5 +293,8 @@ class MultiEvent(Event):
         return Probability.apply_func(self._op, [event.probability() for event in self._events])
 
 
-def P(event):
-    return event.probability()
+def P(event, **kwargs):
+    p = event.probability()
+    if 'given' in kwargs:
+        return p-kwargs['given'].probability()
+    return p

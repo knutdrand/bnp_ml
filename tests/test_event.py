@@ -1,7 +1,7 @@
 import numpy as np
 from bnp_ml.probability.events import (DictRandomVariable, Event, Probability,
                                        P, Bernoulli, Beta, scipy_stats_wrapper,
-                                       Normal, Categorical)
+                                       Normal, Categorical, Geometric)
 from bnp_ml.pyprob.regression import linear_regression_model
 import scipy.stats
 import pytest
@@ -36,6 +36,11 @@ def normal():
 @pytest.fixture
 def beta():
     return Beta(1.0, 1.0)
+
+
+@pytest.fixture
+def geometric():
+    return Geometric(0.4)
 
 
 @pytest.fixture
@@ -132,6 +137,26 @@ def test_mixture_model_sample(normals, categorical):
 def test_add_scalar(normal):
     X = normal
     Z = X+2
-    print(X, Z)
-    print(X==2.0, Z==4.0)
     assert P(X == 2.0).prob() == P(Z == 4.0).prob()
+
+
+def test_add_categorical(normal, categorical, ps):
+    Z = normal+categorical
+    true = sum(P(normal==2.0-i).prob()*p for i, p in enumerate(ps))
+    assert P(Z == 2.0).prob() == true
+
+
+def test_given(dice):
+    assert P(dice == 2, given= (dice == 2) | (dice == 3))
+
+
+def test_le(categorical):
+    assert P(categorical < 2).prob() == 0.6
+
+
+@pytest.mark.xfail
+def test_signal_model(categorical, geometric):
+    Z = categorical + geometric
+    P(Z == z, given=Z < 4)
+
+    
