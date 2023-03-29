@@ -9,6 +9,7 @@ import optax
 import logging
 logger = logging.getLogger(__name__)
 
+
 def mixture_class(class_1, class_2, seed):
     class MixtureOfTwo:
         def __init__(self, prob_a, *args):
@@ -148,6 +149,7 @@ def estimate_fisher_information(model: Distribution, n: int = 10000000, rng=None
     else:
         x = model.sample((n,))
     f = lambda params, data: -np.mean(model.__class__(*params).log_prob(data))
+    print(model.parameters)
     hessian = jax.hessian(f)(model.parameters, x)
     return hessian
 

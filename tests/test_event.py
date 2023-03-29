@@ -2,7 +2,7 @@ import numpy as np
 from bnp_ml.probability.events import (DictRandomVariable, Event, Probability,
                                        P, Bernoulli, Beta, scipy_stats_wrapper,
                                        Normal, Categorical, Geometric)
-from bnp_ml.pyprob.regression import linear_regression_model
+# from bnp_ml.pyprob.regression import linear_regression_model
 import scipy.stats
 import pytest
 from numpy.testing import assert_allclose
@@ -61,6 +61,16 @@ def test_mixture_model(normals, categorical, ps):
     X = normals[Z]
     prob = P(X == 2.).prob()
     true = sum(p1*p2 for p1, p2 in zip(ps, P(normals == 2.).prob()))
+    assert_allclose(prob, true)
+
+
+def test_mixture_model_2(normals, categorical, ps):
+    Z = categorical
+    X = normals[Z]
+    x = np.array([2.0, 1.0])
+    prob = P(X == x).prob()
+    true = np.sum(ps*P(normals==x[:, np.newaxis]).prob(), axis=-1)
+    # true = sum(p1*p2 for p1, p2 in zip(ps, P(normals == x[:, np.newaxis]).prob()))
     assert_allclose(prob, true)
 
 

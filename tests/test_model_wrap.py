@@ -1,6 +1,6 @@
 # from .probability_fixtures import normal
 from bnp_ml.probability.model_wrap import wrap_model_func
-from bnp_ml.probability.events import Normal
+from bnp_ml.probability.events import Normal, Categorical
 from bnp_ml.jax_wrapper import estimate_fisher_information, estimate_sgd
 from bnp_ml.fisher_plot import fisher_table
 import numpy as np
@@ -12,6 +12,17 @@ fast_sgd = partial(estimate_sgd, n_iterations=5)
 @pytest.fixture
 def normal_func():
     return lambda mu, sigma: Normal(mu, sigma)
+
+
+@pytest.fixture
+def mixture_func():
+    return lambda ps, mus: Normal(mus, [1.0])[Categorical(probs=ps)]
+
+
+@pytest.fixture
+def mixture_model(mixture_func):
+    model_class = wrap_model_func(mixture_func)
+    return model_class(np.arange(3).astype(float), np.array([0.1, 0.5, 0.4]))
 
 
 @pytest.fixture
@@ -31,6 +42,15 @@ def test_wrap_model(normal_func):
 
 
 def test_fisher_information(standard_normal):
+    estimate_fisher_information(standard_normal, n=10, rng=10)
+
+
+def test_fisher_information_mix(mixture_model):
+    estimate_fisher_information(mixture_model, n=10, rng=10)
+
+
+def test_fisher_information(mixture_func):
+    model = wrap_model_func(mixture_func)
     estimate_fisher_information(standard_normal, n=10, rng=10)
 
 

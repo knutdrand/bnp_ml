@@ -87,6 +87,10 @@ class RandomVariable(ABC):
     def event_shape(self):
         return ()
 
+    @property
+    def batch_shape(self):
+        return ()
+
     def __eq__(self, value) -> 'Event':
         return Event(self, value)
 
@@ -132,9 +136,9 @@ class ConvolutionVariable(RandomVariable):
         self._variable_b = variable_b
 
     def probability(self, value):
-        probs_b = self._variable_b.probability(value)
-        probs_a = self._variable_a.probability(xp.arange(probs_b.shape[0]))
-        return (probs_a*probs_b).sum()
+        probs_b = self._variable_b.probability(value[..., np.newaxis])
+        probs_a = self._variable_a.probability(xp.arange(self._variable_b.batch_shape[0]))
+        return (probs_a*probs_b).sum(axis=-1)
 
     def sample(self, rng, shape=()):
         return self._variable_b[self._variable_a.sample(rng, shape)].sample(rng)
@@ -213,6 +217,12 @@ def jax_wrapper(dist, domain_func=None):
     class Wrapper(ParameterizedDistribution):
         def __init__(self, *args, **kwargs):
             self._dist = dist(*args, **kwargs)
+            # self.batch_shape = self._dist.batch_shape
+            # self.event_shape = self._dist.event_shape
+
+        @property
+        def batch_shape(self):
+            return self._dist.batch_shape
 
         def probability(self, value) -> Probability:
             return Probability(log_p=self._dist.log_prob(value))
