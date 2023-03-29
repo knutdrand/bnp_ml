@@ -8,6 +8,8 @@ def wrap_model_func(func):
         def __init__(self, *args):
             self._rv = func(*args)
             self._args = args
+            for name, arg in zip(arg_names, self._args):
+                setattr(self, name, arg)
 
         @classmethod
         def parameter_names(cls):
@@ -22,5 +24,9 @@ def wrap_model_func(func):
 
         def sample(self, *args, **kwargs):
             return self._rv.sample(*args, **kwargs)
+
+        @property
+        def event_shape(self):
+            return self._rv.event_shape
 
     return Model
