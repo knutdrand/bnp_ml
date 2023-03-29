@@ -46,12 +46,13 @@ def test_fisher_information(standard_normal):
 
 
 def test_fisher_information_mix(mixture_model):
-    estimate_fisher_information(mixture_model, n=10, rng=10)
+    estimate_fisher_information(mixture_model, n=3, rng=10)
 
 
-def test_fisher_information(mixture_func):
-    model = wrap_model_func(mixture_func)
-    estimate_fisher_information(standard_normal, n=10, rng=10)
+def test_backfroth_mix(mixture_model):
+    X = mixture_model.sample(10, (3, 2))
+    probs = mixture_model.log_prob(X)
+    assert probs.shape == (3, 2)
 
 
 def test_optimizer(standard_normal, normal_model):

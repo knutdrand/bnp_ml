@@ -6,9 +6,11 @@ import numpy as np
 from math import prod
 import jax.numpy as jnp
 from scipy.special import logsumexp
+from jax.scipy.special import logsumexp
 import operator
 from numbers import Number
 xp = jnp
+
 
 
 class Probability:
@@ -136,7 +138,7 @@ class ConvolutionVariable(RandomVariable):
         self._variable_b = variable_b
 
     def probability(self, value):
-        probs_b = self._variable_b.probability(value[..., np.newaxis])
+        probs_b = self._variable_b.probability(value[..., xp.newaxis])
         probs_a = self._variable_a.probability(xp.arange(self._variable_b.batch_shape[0]))
         return (probs_a*probs_b).sum(axis=-1)
 
@@ -207,7 +209,7 @@ class SumVariable(RandomVariable):
     def probability(self, value):
         if self._a_domain is None:
             return NotImplemented
-        return np.sum(self._a.probability(self._a_domain)*self._b.probability(value-self._a_domain), axis=0)
+        return xp.sum(self._a.probability(self._a_domain)*self._b.probability(value-self._a_domain), axis=0)
 
     def sample(self, *args, **kwargs):
         return self._a.sample(*args, **kwargs) + self._b.sample(*args, **kwargs)
