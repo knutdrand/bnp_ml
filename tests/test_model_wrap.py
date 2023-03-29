@@ -50,9 +50,9 @@ def test_fisher_information_mix(mixture_model):
 
 
 def test_backfroth_mix(mixture_model):
-    X = mixture_model.sample(10, (3, 2))
+    X = mixture_model.sample(10, (4, 5))
     probs = mixture_model.log_prob(X)
-    assert probs.shape == (3, 2)
+    assert probs.shape == (4, 5)
 
 
 def test_optimizer(standard_normal, normal_model):
@@ -63,4 +63,8 @@ def test_optimizer(standard_normal, normal_model):
 
 def test_fisher_table(standard_normal):
     fisher_table(standard_normal, fast_sgd, sample_sizes=np.arange(1, 5), n_fisher=10, rng=10)
+
+
+def test_fisher_table_mix(mixture_model):
+    fisher_table(mixture_model, fast_sgd, sample_sizes=np.arange(1, 5), n_fisher=10, rng=10)
 

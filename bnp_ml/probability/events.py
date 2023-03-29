@@ -12,7 +12,6 @@ from numbers import Number
 xp = jnp
 
 
-
 class Probability:
     def __init__(self, p=None, log_p=None, log_odds=None):
         self._p = p
@@ -143,7 +142,13 @@ class ConvolutionVariable(RandomVariable):
         return (probs_a*probs_b).sum(axis=-1)
 
     def sample(self, rng, shape=()):
-        return self._variable_b[self._variable_a.sample(rng, shape)].sample(rng)
+        a = self._variable_a.sample(rng, shape)
+        b = self._variable_b.sample(rng, shape)
+        print(a, b)
+        tmp = b.reshape(-1, b.shape[-1])
+        return tmp[np.arange(tmp.shape[0]), a.ravel()].reshape(shape)
+        return xp.take_along_axis(b, a, axis=-1)
+    # rreturn self._variable_b[self._variable_a.sample(rng, shape)].sample(rng)
 
 
 class IndexedVariable(RandomVariable):
@@ -151,10 +156,15 @@ class IndexedVariable(RandomVariable):
         self._random_variable = random_variable
         self._idx = idx
 
+    @property
+    def batch_shape(self):
+        return self._idx.shape if hasattr(self._idx, 'shape') else ()
+
     def probability(self, value):
         return self._random_variable.probability(value)[..., self._idx]
 
     def sample(self, rng, shape=()):
+        shape = shape+self.batch_shape
         s = self._random_variable.sample(rng, shape)
         print(s.shape)
         return s[..., self._idx]

@@ -143,6 +143,7 @@ def get_log_likelihood_function(distribution_class: type, data: np.ndarray):
 
 
 def estimate_fisher_information(model: Distribution, n: int = 10000000, rng=None):
+    print(model.event_shape)
     n //= math.prod(model.event_shape)
     if rng is not None:
         x = model.sample(rng, (n,))

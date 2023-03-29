@@ -29,7 +29,7 @@ def fisher_table(dist, estimator, sample_sizes=None, n_fisher=100000, rng=None):
         if hasattr(dist, 'is_natural') and dist.is_natural:
             init_dist = init_like(dist, rng)
         else:
-            init_dist = dist.__class__(*[np.full_like(param, 0.6)
+            init_dist = dist.__class__(*[np.full_like(param, 0.6)+np.random.rand(*param.shape)/50
                                          for param in dist.parameters])
         s = dist.sample((sample_size, )) if rng is None else dist.sample(rng, (sample_size, ))
         estimate = estimator(init_dist, s)
