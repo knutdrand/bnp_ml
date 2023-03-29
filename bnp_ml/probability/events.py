@@ -83,11 +83,15 @@ class Probability:
 
 
 class RandomVariable(ABC):
+    @property
+    def event_shape(self):
+        return ()
+
     def __eq__(self, value) -> 'Event':
         return Event(self, value)
 
     def __lt__(self, value):
-        
+        pass
 
     def __getitem__(self, idx):
         if isinstance(idx, RandomVariable):
@@ -282,6 +286,7 @@ class Event:
 
 class LTEvent(Event):
     pass
+
 
 class MultiEvent(Event):
     def __init__(self, events, op):
